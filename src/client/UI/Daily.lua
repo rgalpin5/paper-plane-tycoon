@@ -78,7 +78,7 @@ function DailyUI.mount(gui: ScreenGui)
 				bg = if data.streak == i then Theme.Sky else Theme.Panel2,
 				radius = 8,
 			})
-			local extra = if i == 7 then "  + Daily Crate" else ""
+			local extra = if i == 7 then "  + Paper Crate" else ""
 			Util.label({
 				parent = row,
 				text = "Day " .. i .. "   " .. Format.abbrev(reward) .. extra,

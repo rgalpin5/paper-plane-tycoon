@@ -16,10 +16,6 @@ local Stats = require(script.Parent.Parent.Lib.Stats)
 
 local Crate = {}
 
-local function utcDay(): number
-	return math.floor(os.time() / 86400)
-end
-
 local function weightedPick(entries: { { id: string, weight: number } }): string
 	local total = 0
 	for _, e in entries do
@@ -36,14 +32,14 @@ local function weightedPick(entries: { { id: string, weight: number } }): string
 	return entries[#entries].id
 end
 
-function Crate.oddsTable(player: Player, crateId: string, luckOverride: number?)
+function Crate.oddsTable(player: Player, crateId: string)
 	local crate = Crates.get(crateId)
 	if not crate then
 		return nil
 	end
 	local data = Data.get(player)
 	local flags = Monetization.flags(player)
-	local luck = luckOverride or Stats.luckMultiplier(flags, data ~= nil and data.luckyRolls > 0)
+	local luck = if data then Stats.luckMultiplier(data, flags) else 1
 	local rarityWeights = {}
 	local sum = 0
 	for rarity, weight in crate.weights do
@@ -75,11 +71,8 @@ function Crate.oddsTable(player: Player, crateId: string, luckOverride: number?)
 			check += each
 		end
 	end
-
-	-- Nudge the last row so displayed odds sum to 100.
 	if #planeRows > 0 then
-		local drift = 100 - check
-		planeRows[#planeRows].percent += drift
+		planeRows[#planeRows].percent += 100 - check
 	end
 
 	return {
@@ -91,7 +84,7 @@ function Crate.oddsTable(player: Player, crateId: string, luckOverride: number?)
 		pity = if data then data.pity else { legendary = 0, mythic = 0 },
 		rarityPercents = rarityPercents,
 		planes = planeRows,
-		paidRandom = crate.paidRandom,
+		paidRandom = false,
 	}
 end
 
@@ -99,7 +92,7 @@ local function pickPlane(player: Player, crateId: string, forceRarity: string?):
 	local crate = Crates.get(crateId) :: any
 	local data = Data.get(player)
 	local flags = Monetization.flags(player)
-	local luck = Stats.luckMultiplier(flags, data.luckyRolls > 0)
+	local luck = Stats.luckMultiplier(data, flags)
 	local entries = {}
 	if forceRarity then
 		for _, id in Planes.idsOfRarity(forceRarity) do
@@ -122,32 +115,25 @@ local function pickPlane(player: Player, crateId: string, forceRarity: string?):
 	return weightedPick(entries)
 end
 
-function Crate.open(player: Player, crateId: string, isFree: boolean?)
+function Crate.open(player: Player, crateId: string, opts: { free: boolean?, paidRobux: boolean?}?)
+	opts = opts or {}
 	local crate = Crates.get(crateId)
 	local data = Data.get(player)
 	if not crate or not data then
 		return
 	end
 
-	if crate.paidRandom and Data.isPolicyRestricted(player) then
-		Economy.notify(player, "Paid crates are unavailable in your region. Buy a guaranteed plane instead.", "error")
+	if opts.paidRobux and Data.isPolicyRestricted(player) then
+		Economy.notify(player, "Paid crates are unavailable in your region. Buy a guaranteed plane in the Index.", "error")
 		return
 	end
 
-	if crate.currency == "free" or isFree then
-		-- caller already validated
-	elseif crate.currency == "keys" then
-		local keys = data.crateKeys[crateId] or 0
-		if keys < crate.cost then
-			Economy.notify(player, "Need a " .. crate.name .. " key.", "error")
-			return
-		end
-		data.crateKeys[crateId] = keys - crate.cost
+	if opts.free then
+		-- caller paid
+	elseif opts.paidRobux then
+		-- ProcessReceipt already charged Robux
 	else
-		local keys = data.crateKeys[crateId] or 0
-		if keys >= 1 then
-			data.crateKeys[crateId] = keys - 1
-		elseif not Economy.spendCoins(player, crate.cost) then
+		if not Economy.spendCoins(player, crate.cost) then
 			Economy.notify(player, "Not enough coins.", "error")
 			return
 		end
@@ -176,15 +162,11 @@ function Crate.open(player: Player, crateId: string, isFree: boolean?)
 		data.pity.legendary = 0
 	end
 
-	if data.luckyRolls > 0 then
-		data.luckyRolls -= 1
-	end
-
 	local duplicate, scrap = Hangar.grantPlane(player, planeId)
 	data.stats.cratesOpened += 1
 
 	local skipped = Monetization.flags(player).skipAnim
-	local result = {
+	Remotes.CrateOpened:FireClient(player, {
 		crateId = crateId,
 		planeId = planeId,
 		duplicate = duplicate,
@@ -192,15 +174,15 @@ function Crate.open(player: Player, crateId: string, isFree: boolean?)
 		rarity = def.rarity,
 		pity = data.pity,
 		skipped = skipped,
-	}
-	Remotes.CrateOpened:FireClient(player, result)
+	})
 	Data.replicate(player)
 
 	if def.rarity == "Mythic" or def.rarity == "Secret" then
 		local msg = player.DisplayName .. " unfolded " .. def.name .. " (" .. def.rarity .. ")!"
 		Remotes.Announcement:FireAllClients(msg, def.rarity)
 		pcall(function()
-			local channel = TextChatService:FindFirstChild("TextChannels") and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+			local channel = TextChatService:FindFirstChild("TextChannels")
+				and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 			if channel then
 				channel:DisplaySystemMessage(msg)
 			end
@@ -213,21 +195,7 @@ function Crate.start()
 		if typeof(crateId) ~= "string" then
 			return
 		end
-		Crate.open(player, crateId, false)
-	end)
-
-	Remotes.ClaimDailyCrate.OnServerEvent:Connect(function(player)
-		local data = Data.get(player)
-		if not data then
-			return
-		end
-		local today = utcDay()
-		if data.lastDailyCrateDay == today then
-			Economy.notify(player, "Daily crate already claimed.", "info")
-			return
-		end
-		data.lastDailyCrateDay = today
-		Crate.open(player, "Daily", true)
+		Crate.open(player, crateId, {})
 	end)
 
 	Remotes.BuyGuaranteedPlane.OnServerEvent:Connect(function(player, planeId)

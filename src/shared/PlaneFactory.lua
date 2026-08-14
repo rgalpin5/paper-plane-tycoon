@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Planes = Config.Planes
 local Rarities = Config.Rarities
+local Cosmetics = Config.Cosmetics
 
 local PlaneFactory = {}
 
@@ -81,22 +82,46 @@ function PlaneFactory.create(planeId: string): Model
 	return model
 end
 
-function PlaneFactory.setRainbowTrail(model: Model)
+function PlaneFactory.applyCosmetics(model: Model, equipped: { string }?)
 	local body = model.PrimaryPart
-	if not body then
+	if not body or not equipped then
 		return
 	end
+	local scale = model:GetAttribute("Scale") or 1
 	local trail = body:FindFirstChild("PaperTrail")
-	if trail and trail:IsA("Trail") then
-		trail.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-			ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 200, 40)),
-			ColorSequenceKeypoint.new(0.4, Color3.fromRGB(80, 255, 80)),
-			ColorSequenceKeypoint.new(0.6, Color3.fromRGB(60, 180, 255)),
-			ColorSequenceKeypoint.new(0.8, Color3.fromRGB(160, 80, 255)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 200)),
-		})
-		trail.Lifetime = 0.7
+	for _, id in equipped do
+		local def = Cosmetics.get(id)
+		if def then
+			if def.kind == "trail" and trail and trail:IsA("Trail") then
+				trail.Color = ColorSequence.new(def.color, Color3.new(1, 1, 1))
+				trail.Lifetime = 0.7
+			elseif def.kind == "aura" then
+				local att = Instance.new("Attachment")
+				att.Name = "Aura"
+				att.Parent = body
+				local pe = Instance.new("ParticleEmitter")
+				pe.Color = ColorSequence.new(def.color)
+				pe.Size = NumberSequence.new(0.35 * scale, 0)
+				pe.Lifetime = NumberRange.new(0.4, 0.8)
+				pe.Rate = 12
+				pe.Speed = NumberRange.new(0.2, 0.8)
+				pe.LightEmission = 0.4
+				pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+				pe.Parent = att
+			elseif def.kind == "trinket" then
+				local gem = Instance.new("Part")
+				gem.Name = "Trinket"
+				gem.Shape = Enum.PartType.Ball
+				gem.Size = Vector3.new(0.22, 0.22, 0.22) * scale
+				gem.Color = def.color
+				gem.Material = Enum.Material.Neon
+				gem.Anchored = true
+				gem.CanCollide = false
+				gem.Massless = true
+				gem.CFrame = body.CFrame * CFrame.new(0, 0.16 * scale, 0)
+				gem.Parent = model
+			end
+		end
 	end
 end
 

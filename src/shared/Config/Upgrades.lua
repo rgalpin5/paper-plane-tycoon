@@ -1,5 +1,3 @@
-local Numbers = require(script.Parent.Numbers)
-
 export type UpgradeDef = {
 	id: string,
 	name: string,
@@ -7,48 +5,18 @@ export type UpgradeDef = {
 	maxLevel: number,
 	baseCost: number,
 	costScale: number,
-	category: "plane" | "hangar",
+	category: "plane" | "hangar" | "player",
 	stat: string,
 }
 
 local plane: { UpgradeDef } = {
 	{
-		id = "Power",
-		name = "Power",
-		blurb = "Throw farther. More studs, more coins.",
+		id = "PlaneLevel",
+		name = "Plane Level",
+		blurb = "Global fold rank. Your equipped plane flies farther.",
 		maxLevel = 100,
-		baseCost = 15,
-		costScale = 1.12,
-		category = "plane",
-		stat = "distance",
-	},
-	{
-		id = "PaperQuality",
-		name = "Paper Quality",
-		blurb = "Richer paper pays more coins per stud.",
-		maxLevel = 80,
-		baseCost = 22,
-		costScale = 1.13,
-		category = "plane",
-		stat = "coins",
-	},
-	{
-		id = "FoldPrecision",
-		name = "Fold Precision",
-		blurb = "Tighter folds, more consistent distance.",
-		maxLevel = 80,
 		baseCost = 18,
-		costScale = 1.12,
-		category = "plane",
-		stat = "consistency",
-	},
-	{
-		id = "WingSpan",
-		name = "Wing Span",
-		blurb = "Wider wings glide farther.",
-		maxLevel = 50,
-		baseCost = 40,
-		costScale = 1.15,
+		costScale = 1.13,
 		category = "plane",
 		stat = "distance",
 	},
@@ -56,9 +24,9 @@ local plane: { UpgradeDef } = {
 
 local hangar: { UpgradeDef } = {
 	{
-		id = "Capacity",
-		name = "Capacity",
-		blurb = "Store more planes for a bigger idle bonus.",
+		id = "Storage",
+		name = "Storage",
+		blurb = "More unique planes count toward offline income. Extra display stands.",
 		maxLevel = 30,
 		baseCost = 120,
 		costScale = 1.2,
@@ -66,34 +34,47 @@ local hangar: { UpgradeDef } = {
 		stat = "capacity",
 	},
 	{
-		id = "IdleRate",
-		name = "Idle Rate",
-		blurb = "Hangar earns more coins every minute.",
+		id = "OfflineIncome",
+		name = "Offline Income",
+		blurb = "Hangar earns more coins every minute you are away.",
 		maxLevel = 50,
 		baseCost = 80,
 		costScale = 1.18,
 		category = "hangar",
 		stat = "idle",
 	},
+}
+
+local player: { UpgradeDef } = {
 	{
-		id = "OfflineHours",
-		name = "Offline Hours",
-		blurb = "Raise the free offline cap (VIP still goes to 8h).",
-		maxLevel = 10,
-		baseCost = 400,
-		costScale = 1.45,
-		category = "hangar",
-		stat = "offline",
+		id = "StrengthGain",
+		name = "Strength Gain",
+		blurb = "Throws and benches grant more strength.",
+		maxLevel = 80,
+		baseCost = 25,
+		costScale = 1.14,
+		category = "player",
+		stat = "strength",
 	},
 	{
-		id = "DisplaySlots",
-		name = "Display Slots",
-		blurb = "Equip more planes at once for stacked throw power.",
-		maxLevel = 5,
-		baseCost = 750,
-		costScale = 1.85,
-		category = "hangar",
-		stat = "slots",
+		id = "MultiPlane",
+		name = "Planes at Once",
+		blurb = "Launch extra planes each throw (up to 5, plus a Robux extra).",
+		maxLevel = 4,
+		baseCost = 400,
+		costScale = 2.1,
+		category = "player",
+		stat = "volley",
+	},
+	{
+		id = "Luck",
+		name = "Luck",
+		blurb = "Better Rare+ crate odds. Does not change throw distance or coins.",
+		maxLevel = 50,
+		baseCost = 90,
+		costScale = 1.22,
+		category = "player",
+		stat = "luck",
 	},
 }
 
@@ -104,12 +85,15 @@ end
 for _, def in hangar do
 	byId[def.id] = def
 end
+for _, def in player do
+	byId[def.id] = def
+end
 
 local Upgrades = {
 	Plane = plane,
 	Hangar = hangar,
+	Player = player,
 	ById = byId,
-	AutoThrowCost = Numbers.AutoThrowUpgradeCost,
 }
 
 function Upgrades.cost(def: UpgradeDef, currentLevel: number): number

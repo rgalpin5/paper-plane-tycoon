@@ -6,7 +6,6 @@ local Numbers = Config.Numbers
 
 local Data = require(script.Parent.Data)
 local Economy = require(script.Parent.Economy)
-local Monetization = require(script.Parent.Monetization)
 local Stats = require(script.Parent.Parent.Lib.Stats)
 
 local Rebirth = {}
@@ -16,23 +15,23 @@ function Rebirth.preview(player: Player)
 	if not data then
 		return nil
 	end
-	local flags = Monetization.flags(player)
 	local cost = Stats.rebirthCost(data.rebirths)
-	local bonus = Numbers.RebirthBonus
-	if flags.doubleRebirth then
-		bonus *= 2
-	end
-	local current = Stats.rebirthMultiplier(data, flags)
-	local nextMult = 1 + (data.rebirths + 1) * bonus
+	local coinNow = Stats.rebirthCoinMult(data)
+	local strNow = Stats.rebirthStrengthMult(data)
+	local coinNext = 1 + (data.rebirths + 1) * Numbers.RebirthCoinBonus
+	local strNext = 1 + (data.rebirths + 1) * Numbers.RebirthStrengthBonus
 	return {
 		cost = cost,
 		canAfford = data.coins >= cost,
-		currentMultiplier = current,
-		nextMultiplier = nextMult,
-		gain = nextMult - current,
+		currentCoin = coinNow,
+		nextCoin = coinNext,
+		currentStrength = strNow,
+		nextStrength = strNext,
+		coinGain = coinNext - coinNow,
+		strengthGain = strNext - strNow,
 		rebirths = data.rebirths,
-		keeps = { "Planes", "Hangar upgrades", "Scrap", "Crate keys" },
-		resets = { "Coins", "Plane upgrades" },
+		keeps = { "Planes", "Hangar upgrades", "Player upgrades", "Cosmetics", "Scrap" },
+		resets = { "Coins", "Strength", "Plane level" },
 	}
 end
 
@@ -52,13 +51,20 @@ function Rebirth.start()
 			return
 		end
 		data.coins = 0
-		data.upgrades.Power = 0
-		data.upgrades.PaperQuality = 0
-		data.upgrades.FoldPrecision = 0
-		data.upgrades.WingSpan = 0
+		data.strength = Numbers.StarterStrength
+		data.planeLevel = 0
 		data.rebirths += 1
 		Data.replicate(player)
-		Economy.notify(player, "Rebirth " .. tostring(data.rebirths) .. "! +" .. string.format("%.0f%%", preview.gain * 100) .. " forever.", "success")
+		Economy.notify(
+			player,
+			string.format(
+				"Rebirth %d! Coins ×%.2f  Strength ×%.2f",
+				data.rebirths,
+				preview.nextCoin,
+				preview.nextStrength
+			),
+			"success"
+		)
 	end)
 end
 

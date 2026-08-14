@@ -3,10 +3,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Config = require(ReplicatedStorage.Shared.Config)
-local PlaneFactory = require(ReplicatedStorage.Shared.PlaneFactory)
 local Upgrades = Config.Upgrades
 local Planes = Config.Planes
-local Numbers = Config.Numbers
 
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
@@ -14,41 +12,6 @@ local Util = require(script.Parent.Util)
 local HUD = require(script.Parent.HUD)
 
 local HangarUI = {}
-local spawned: { Model } = {}
-
-local function clearStands()
-	for _, m in spawned do
-		m:Destroy()
-	end
-	table.clear(spawned)
-end
-
-function HangarUI.showEquipped(equipped)
-	clearStands()
-	local map = workspace:FindFirstChild("Map")
-	local folder = map and map:FindFirstChild("DisplayStands")
-	if not folder then
-		return
-	end
-	local stands = {}
-	for _, child in folder:GetChildren() do
-		if child:IsA("BasePart") then
-			table.insert(stands, child)
-		end
-	end
-	table.sort(stands, function(a, b)
-		return (a:GetAttribute("Slot") or 0) < (b:GetAttribute("Slot") or 0)
-	end)
-	for i, planeId in equipped do
-		local stand = stands[i]
-		if stand then
-			local model = PlaneFactory.create(planeId)
-			model.Parent = stand
-			model:PivotTo(stand.CFrame * CFrame.new(0, 2.5, 0) * CFrame.Angles(0, math.rad(25), math.rad(-10)))
-			table.insert(spawned, model)
-		end
-	end
-end
 
 function HangarUI.mount(gui: ScreenGui)
 	local page = Util.panel({
@@ -87,35 +50,20 @@ function HangarUI.mount(gui: ScreenGui)
 			return
 		end
 
-		local auto = Util.panel({ parent = scroll, size = UDim2.new(1, -8, 0, 72), bg = Theme.Panel2 })
-		local unlocked = snap.computed.autoThrow
 		Util.label({
-			parent = auto,
-			text = if unlocked then "Auto Throw ON" else "Unlock Auto Throw",
-			size = UDim2.new(0.6, 0, 0, 30),
-			pos = UDim2.fromOffset(10, 8),
-			font = Theme.Fonts.Title,
+			parent = scroll,
+			text = string.format(
+				"Storage %d  •  Stands %d  •  Offline %sh  •  %s/min",
+				snap.computed.storage,
+				snap.computed.stands,
+				tostring(snap.computed.offlineHours),
+				Format.abbrev(snap.computed.idlePerMinute)
+			),
+			size = UDim2.new(1, 0, 0, 36),
+			auto = Enum.AutomaticSize.Y,
+			textSize = 16,
+			color = Theme.Gold,
 		})
-		Util.label({
-			parent = auto,
-			text = "Upgrade path or game pass. Throws while you're in-experience.",
-			size = UDim2.new(0.6, 0, 0, 28),
-			pos = UDim2.fromOffset(10, 36),
-			color = Theme.Muted,
-		})
-		if not unlocked then
-			local b = Util.button({
-				parent = auto,
-				text = Format.abbrev(Numbers.AutoThrowUpgradeCost),
-				size = UDim2.fromOffset(110, 40),
-				pos = UDim2.new(1, -16, 0.5, 0),
-				anchor = Vector2.new(1, 0.5),
-				bg = Theme.Sky,
-			})
-			b.MouseButton1Click:Connect(function()
-				Remotes.BuyAutoThrow:FireServer()
-			end)
-		end
 
 		for _, def in Upgrades.Hangar do
 			local level = snap.data.hangarUpgrades[def.id] or 0
@@ -161,7 +109,7 @@ function HangarUI.mount(gui: ScreenGui)
 
 		Util.label({
 			parent = scroll,
-			text = "EQUIPPED  (" .. #snap.data.equipped .. "/" .. snap.computed.equipSlots .. ")",
+			text = "EQUIPPED PLANE  (best plane shows on your plot)",
 			size = UDim2.new(1, 0, 0, 28),
 			font = Theme.Fonts.Title,
 			auto = Enum.AutomaticSize.Y,
@@ -174,20 +122,9 @@ function HangarUI.mount(gui: ScreenGui)
 			Util.label({
 				parent = row,
 				text = def and def.name or id,
-				size = UDim2.new(0.7, 0, 1, 0),
+				size = UDim2.new(0.9, 0, 1, 0),
 				pos = UDim2.fromOffset(10, 0),
 			})
-			local u = Util.button({
-				parent = row,
-				text = "OFF",
-				size = UDim2.fromOffset(56, 32),
-				pos = UDim2.new(1, -12, 0.5, 0),
-				anchor = Vector2.new(1, 0.5),
-				bg = Theme.Danger,
-			})
-			u.MouseButton1Click:Connect(function()
-				Remotes.UnequipPlane:FireServer(id)
-			end)
 		end
 	end
 
@@ -200,13 +137,6 @@ function HangarUI.mount(gui: ScreenGui)
 		if page.Visible then
 			rebuild()
 		end
-		if State.snapshot then
-			HangarUI.showEquipped(State.snapshot.data.equipped)
-		end
-	end)
-
-	Remotes.HangarDisplay.OnClientEvent:Connect(function(equipped)
-		HangarUI.showEquipped(equipped)
 	end)
 
 	HUD.register("Hangar", page)

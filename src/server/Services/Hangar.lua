@@ -4,7 +4,6 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Upgrades = Config.Upgrades
 local Planes = Config.Planes
-local Numbers = Config.Numbers
 
 local Data = require(script.Parent.Data)
 local Economy = require(script.Parent.Economy)
@@ -12,6 +11,16 @@ local Monetization = require(script.Parent.Monetization)
 local Stats = require(script.Parent.Parent.Lib.Stats)
 
 local Hangar = {}
+
+local function bagFor(data, category: string)
+	if category == "hangar" then
+		return data.hangarUpgrades
+	end
+	if category == "player" then
+		return data.playerUpgrades
+	end
+	return nil
+end
 
 local function buy(player: Player, upgradeId: string, buyMax: boolean, category: string)
 	local def = Upgrades.ById[upgradeId]
@@ -22,12 +31,19 @@ local function buy(player: Player, upgradeId: string, buyMax: boolean, category:
 	if not data then
 		return
 	end
-	local bag = if category == "hangar" then data.hangarUpgrades else data.upgrades
-	local current = bag[upgradeId] or 0
+
+	local current
+	if category == "plane" then
+		current = data.planeLevel or 0
+	else
+		local bag = bagFor(data, category)
+		current = bag[upgradeId] or 0
+	end
 	if current >= def.maxLevel then
 		Economy.notify(player, "Already maxed!", "info")
 		return
 	end
+
 	local bought, spent
 	if buyMax then
 		bought, spent = Upgrades.buyMax(def, current, data.coins)
@@ -44,22 +60,18 @@ local function buy(player: Player, upgradeId: string, buyMax: boolean, category:
 		return
 	end
 	data.coins -= spent
-	bag[upgradeId] = current + bought
-	if category == "plane" and not data.tutorial.upgraded then
+	if category == "plane" then
+		data.planeLevel = current + bought
+	else
+		local bag = bagFor(data, category)
+		bag[upgradeId] = current + bought
+	end
+	if not data.tutorial.upgraded then
 		data.tutorial.upgraded = true
 		Remotes.Tutorial:FireClient(player, "throwAgain")
 	end
 	Data.replicate(player)
-	Hangar.refreshDisplay(player)
 	Economy.notify(player, def.name .. " +" .. bought, "success")
-end
-
-function Hangar.refreshDisplay(player: Player)
-	local data = Data.get(player)
-	if not data then
-		return
-	end
-	Remotes.HangarDisplay:FireClient(player, data.equipped)
 end
 
 function Hangar.grantPlane(player: Player, planeId: string): (boolean, number)
@@ -94,27 +106,11 @@ function Hangar.start()
 		buy(player, upgradeId, buyMax == true, "hangar")
 	end)
 
-	Remotes.BuyAutoThrow.OnServerEvent:Connect(function(player)
-		local data = Data.get(player)
-		if not data then
+	Remotes.BuyPlayerUpgrade.OnServerEvent:Connect(function(player, upgradeId, buyMax)
+		if typeof(upgradeId) ~= "string" then
 			return
 		end
-		if (data.hangarUpgrades.AutoThrow or 0) >= 1 then
-			Economy.notify(player, "Auto Throw already unlocked.", "info")
-			return
-		end
-		if Monetization.flags(player).autoThrow then
-			data.hangarUpgrades.AutoThrow = 1
-			Data.replicate(player)
-			return
-		end
-		if not Economy.spendCoins(player, Numbers.AutoThrowUpgradeCost) then
-			Economy.notify(player, "Need " .. tostring(Numbers.AutoThrowUpgradeCost) .. " coins.", "error")
-			return
-		end
-		data.hangarUpgrades.AutoThrow = 1
-		Data.replicate(player)
-		Economy.notify(player, "Auto Throw unlocked!", "success")
+		buy(player, upgradeId, buyMax == true, "player")
 	end)
 
 	Remotes.EquipPlane.OnServerEvent:Connect(function(player, planeId)
@@ -125,19 +121,8 @@ function Hangar.start()
 		if not data or (data.ownedPlanes[planeId] or 0) < 1 then
 			return
 		end
-		for _, id in data.equipped do
-			if id == planeId then
-				return
-			end
-		end
-		local slots = Stats.equipSlots(data, Monetization.flags(player))
-		if #data.equipped >= slots then
-			data.equipped[1] = planeId
-		else
-			table.insert(data.equipped, planeId)
-		end
+		data.equipped = { planeId }
 		Data.replicate(player)
-		Hangar.refreshDisplay(player)
 	end)
 
 	Remotes.UnequipPlane.OnServerEvent:Connect(function(player, planeId)
@@ -148,27 +133,13 @@ function Hangar.start()
 		if not data then
 			return
 		end
-		if #data.equipped <= 1 then
-			Economy.notify(player, "Keep at least one plane equipped.", "error")
+		if Stats.equippedPlaneId(data) == planeId then
+			Economy.notify(player, "Keep one plane equipped.", "error")
 			return
 		end
-		local nextEquipped = {}
-		for _, id in data.equipped do
-			if id ~= planeId then
-				table.insert(nextEquipped, id)
-			end
-		end
-		if #nextEquipped == 0 then
-			nextEquipped = { Planes.StarterId }
-		end
-		data.equipped = nextEquipped
-		Data.replicate(player)
-		Hangar.refreshDisplay(player)
 	end)
 
-	Data.ProfileLoaded:Connect(function(player)
-		Hangar.refreshDisplay(player)
-	end)
+	Data.ProfileLoaded:Connect(function() end)
 end
 
 return Hangar

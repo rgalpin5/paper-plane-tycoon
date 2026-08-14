@@ -30,7 +30,7 @@ local function row(parent, def, level, coins, remoteName)
 	Util.label({
 		parent = frame,
 		text = def.blurb,
-		size = UDim2.new(0.55, 0, 0, 32),
+		size = UDim2.new(0.52, 0, 0, 32),
 		pos = UDim2.fromOffset(10, 36),
 		color = Theme.Muted,
 	})
@@ -63,14 +63,14 @@ end
 function UpgradesUI.mount(gui: ScreenGui)
 	local page = Util.panel({
 		parent = gui,
-		size = UDim2.new(0.94, 0, 0.7, 0),
+		size = UDim2.new(0.94, 0, 0.74, 0),
 		pos = UDim2.new(0.5, 0, 0.47, 0),
 		anchor = Vector2.new(0.5, 0.5),
 		z = 20,
 	})
 	Util.label({
 		parent = page,
-		text = "PLANE UPGRADES",
+		text = "UPGRADES",
 		size = UDim2.new(1, -20, 0, 36),
 		pos = UDim2.fromOffset(12, 8),
 		font = Theme.Fonts.Title,
@@ -90,14 +90,30 @@ function UpgradesUI.mount(gui: ScreenGui)
 	scroll.Position = UDim2.fromOffset(8, 48)
 	Util.list(scroll, 8)
 
+	local function header(text)
+		Util.label({
+			parent = scroll,
+			text = text,
+			size = UDim2.new(1, 0, 0, 24),
+			font = Theme.Fonts.Title,
+			auto = Enum.AutomaticSize.Y,
+			textSize = 18,
+		})
+	end
+
 	local function rebuild()
 		Util.clear(scroll)
 		local snap = State.snapshot
 		if not snap then
 			return
 		end
+		header("PLANE")
 		for _, def in Upgrades.Plane do
-			row(scroll, def, snap.data.upgrades[def.id] or 0, snap.data.coins, "BuyUpgrade")
+			row(scroll, def, snap.data.planeLevel or 0, snap.data.coins, "BuyUpgrade")
+		end
+		header("PLAYER")
+		for _, def in Upgrades.Player do
+			row(scroll, def, snap.data.playerUpgrades[def.id] or 0, snap.data.coins, "BuyPlayerUpgrade")
 		end
 	end
 

@@ -95,16 +95,6 @@ function FX.coins(position: Vector3, amount: number)
 	FX.popup(position, "+" .. Format.abbrev(amount), Theme.Gold)
 end
 
-function FX.combo(label: TextLabel, combo: number)
-	if combo <= 1 then
-		label.Text = ""
-		return
-	end
-	label.Text = "COMBO x" .. tostring(combo)
-	label.TextTransparency = 0
-	TweenService:Create(label, TweenInfo.new(0.8), { TextTransparency = 1 }):Play()
-end
-
 function FX.crateSlam(rarityColor: Color3)
 	local flash = Instance.new("ColorCorrectionEffect")
 	flash.TintColor = rarityColor

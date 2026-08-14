@@ -53,15 +53,6 @@ function Economy.spendScrap(player: Player, amount: number): boolean
 	return true
 end
 
-function Economy.addKeys(player: Player, crateId: string, amount: number)
-	local data = Data.get(player)
-	if not data then
-		return
-	end
-	data.crateKeys[crateId] = (data.crateKeys[crateId] or 0) + amount
-	Data.replicate(player)
-end
-
 function Economy.notify(player: Player, message: string, kind: string?)
 	Remotes.Notify:FireClient(player, message, kind or "info")
 end

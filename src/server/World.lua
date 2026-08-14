@@ -1,5 +1,9 @@
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Numbers = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Numbers"))
+local Products = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Products"))
 
 local World = {}
 
@@ -24,11 +28,11 @@ local function part(props): Part
 	return p
 end
 
-local function billboard(adornee: BasePart, text: string, color: Color3, size: Vector2)
+local function billboard(adornee: BasePart, text: string, color: Color3, size: Vector2, offsetY: number?)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Label"
 	bb.Size = UDim2.fromOffset(size.X, size.Y)
-	bb.StudsOffset = Vector3.new(0, adornee.Size.Y / 2 + 2, 0)
+	bb.StudsOffset = Vector3.new(0, (offsetY or (adornee.Size.Y / 2 + 2)), 0)
 	bb.AlwaysOnTop = false
 	bb.Adornee = adornee
 	bb.Parent = adornee
@@ -41,180 +45,340 @@ local function billboard(adornee: BasePart, text: string, color: Color3, size: V
 	label.TextStrokeTransparency = 0.4
 	label.Text = text
 	label.Parent = bb
+	return bb
+end
+
+local function clearMap(map: Instance)
+	for _, child in map:GetChildren() do
+		child:Destroy()
+	end
 end
 
 function World.build()
 	local workspace = game:GetService("Workspace")
-	local existing = workspace:FindFirstChild("Map")
-	if existing and existing:FindFirstChild("ThrowPad") then
-		World._enhance(existing)
-		World._lighting()
-		return existing
+	local map = workspace:FindFirstChild("Map")
+	if map == nil then
+		map = Instance.new("Model")
+		map.Name = "Map"
+		map.Parent = workspace
 	end
+	clearMap(map)
 
-	local map = existing or Instance.new("Model")
-	map.Name = "Map"
-	map.Parent = workspace
-
-	-- Distant city blocks under the roof
-	for i = 1, 18 do
-		local x = ((i % 6) - 2.5) * 42
-		local z = (math.floor((i - 1) / 6) - 1) * 50 - 40
-		local h = 20 + (i * 13) % 40
+	-- Distant city
+	for i = 1, 24 do
+		local x = ((i % 8) - 3.5) * 48
+		local z = 120 + math.floor((i - 1) / 8) * 70
+		local h = 16 + (i * 17) % 50
 		part({
 			name = "Building" .. i,
-			size = Vector3.new(28, h, 24),
-			cf = CFrame.new(x, h / 2 - 8, z - 80),
-			color = Color3.fromRGB(70 + (i * 17) % 40, 80, 100 + (i * 11) % 50),
+			size = Vector3.new(26, h, 22),
+			cf = CFrame.new(x, h / 2 - 4, z + 200),
+			color = Color3.fromRGB(70 + (i * 13) % 40, 82, 105 + (i * 9) % 40),
 			material = Enum.Material.Concrete,
 			parent = map,
 		})
 	end
 
+	-- Plaza
 	part({
-		name = "Rooftop",
-		size = Vector3.new(96, 3, 72),
-		cf = CFrame.new(0, 80, 0),
-		color = Color3.fromRGB(196, 176, 150),
+		name = "Plaza",
+		size = Vector3.new(110, 2, 90),
+		cf = CFrame.new(0, 3, 0),
+		color = Color3.fromRGB(210, 198, 178),
 		material = Enum.Material.Concrete,
 		parent = map,
 	})
-
-	-- Parapet
-	local wallColor = Color3.fromRGB(230, 220, 205)
-	part({ name = "WallN", size = Vector3.new(96, 4, 1.2), cf = CFrame.new(0, 83.5, -36), color = wallColor, parent = map })
-	part({ name = "WallE", size = Vector3.new(1.2, 4, 72), cf = CFrame.new(48, 83.5, 0), color = wallColor, parent = map })
-	part({ name = "WallW", size = Vector3.new(1.2, 4, 72), cf = CFrame.new(-48, 83.5, 0), color = wallColor, parent = map })
-	-- South edge is open for throwing
-	part({ name = "WallSLeft", size = Vector3.new(30, 4, 1.2), cf = CFrame.new(-33, 83.5, 36), color = wallColor, parent = map })
-	part({ name = "WallSRight", size = Vector3.new(30, 4, 1.2), cf = CFrame.new(33, 83.5, 36), color = wallColor, parent = map })
-
-	local pad = part({
-		name = "ThrowPad",
-		size = Vector3.new(16, 1.2, 16),
-		cf = CFrame.new(0, 82.1, 22),
-		color = Color3.fromRGB(70, 160, 230),
-		material = Enum.Material.Neon,
+	part({
+		name = "PlazaRing",
+		size = Vector3.new(114, 1, 94),
+		cf = CFrame.new(0, 2.2, 0),
+		color = Color3.fromRGB(160, 140, 120),
 		parent = map,
 	})
-	CollectionService:AddTag(pad, "ThrowPad")
-	billboard(pad, "THROW", Color3.fromRGB(255, 255, 255), Vector2.new(220, 64))
-
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	emitter.Rate = 8
-	emitter.Lifetime = NumberRange.new(1, 2)
-	emitter.Speed = NumberRange.new(0.4, 1.2)
-	emitter.Size = NumberSequence.new(0.2, 0)
-	emitter.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
-	emitter.Parent = pad
-
-	local vip = part({
-		name = "VIPPad",
-		size = Vector3.new(10, 1.4, 10),
-		cf = CFrame.new(-28, 82.2, 8),
-		color = Color3.fromRGB(255, 200, 60),
-		material = Enum.Material.Neon,
-		parent = map,
-	})
-	CollectionService:AddTag(vip, "VIPPad")
-	billboard(vip, "VIP", Color3.fromRGB(255, 230, 120), Vector2.new(140, 48))
-
-	-- Hangar on the north side
-	local hangarColor = Color3.fromRGB(210, 140, 90)
-	part({ name = "HangarFloor", size = Vector3.new(40, 1, 28), cf = CFrame.new(0, 81.6, -22), color = Color3.fromRGB(160, 120, 80), parent = map })
-	part({ name = "HangarBack", size = Vector3.new(40, 16, 1.4), cf = CFrame.new(0, 89, -36), color = hangarColor, parent = map })
-	part({ name = "HangarLeft", size = Vector3.new(1.4, 16, 28), cf = CFrame.new(-20, 89, -22), color = hangarColor, parent = map })
-	part({ name = "HangarRight", size = Vector3.new(1.4, 16, 28), cf = CFrame.new(20, 89, -22), color = hangarColor, parent = map })
-	part({ name = "HangarRoof", size = Vector3.new(42, 1.2, 30), cf = CFrame.new(0, 97.2, -22), color = Color3.fromRGB(180, 90, 60), parent = map })
-
-	local sign = part({
-		name = "HangarSign",
-		size = Vector3.new(18, 3, 0.6),
-		cf = CFrame.new(0, 95, -7.5),
-		color = Color3.fromRGB(245, 230, 200),
-		parent = map,
-	})
-	billboard(sign, "HANGAR", Color3.fromRGB(90, 50, 30), Vector2.new(280, 72))
-
-	local stands = Instance.new("Folder")
-	stands.Name = "DisplayStands"
-	stands.Parent = map
-	for i = 1, 6 do
-		local x = ((i - 1) % 3 - 1) * 10
-		local z = if i <= 3 then -18 else -28
-		local stand = part({
-			name = "DisplayStand" .. i,
-			size = Vector3.new(3.2, 2.4, 3.2),
-			cf = CFrame.new(x, 83.4, z),
-			color = Color3.fromRGB(120, 90, 60),
-			material = Enum.Material.Wood,
-			parent = stands,
-		})
-		CollectionService:AddTag(stand, "DisplayStand")
-		stand:SetAttribute("Slot", i)
-	end
-
-	-- Decor
-	part({ name = "ACUnit", size = Vector3.new(6, 3, 4), cf = CFrame.new(32, 83.1, -8), color = Color3.fromRGB(150, 155, 160), parent = map })
-	part({ name = "Vent", size = Vector3.new(4, 1, 4), cf = CFrame.new(32, 85.2, -8), color = Color3.fromRGB(90, 90, 95), parent = map })
-	part({ name = "WaterTower", size = Vector3.new(6, 10, 6), cf = CFrame.new(36, 87, 16), color = Color3.fromRGB(180, 70, 70), material = Enum.Material.Metal, parent = map })
 
 	local banner = part({
 		name = "TitleBanner",
-		size = Vector3.new(36, 6, 1),
-		cf = CFrame.new(0, 92, 34),
+		size = Vector3.new(40, 6, 1),
+		cf = CFrame.new(0, 16, -42),
 		color = Color3.fromRGB(255, 250, 235),
 		parent = map,
 		canCollide = false,
 	})
-	billboard(banner, "PAPER PLANE TYCOON", Color3.fromRGB(40, 70, 120), Vector2.new(520, 90))
+	billboard(banner, "PAPER PLANE TYCOON", Color3.fromRGB(40, 70, 120), Vector2.new(560, 90), 4)
 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "SpawnLocation"
 	spawn.Anchored = true
-	spawn.Size = Vector3.new(10, 1, 10)
-	spawn.CFrame = CFrame.new(0, 82.2, 8)
+	spawn.Size = Vector3.new(12, 1, 12)
+	spawn.CFrame = CFrame.new(0, 4.6, 0)
 	spawn.Neutral = true
 	spawn.Duration = 0
-	spawn.Transparency = 0.4
+	spawn.Transparency = 0.35
 	spawn.BrickColor = BrickColor.new("Bright blue")
 	spawn.Parent = map
 
-	-- Invisible landing reference far south
-	local landing = part({
-		name = "LandingZone",
-		size = Vector3.new(80, 1, 20),
-		cf = CFrame.new(0, 40, 220),
-		color = Color3.fromRGB(80, 160, 90),
-		transparency = 1,
-		canCollide = false,
+	-- Hallway +Z
+	local hallLen = Numbers.HallwayLength
+	local hallZ0 = 52
+	local hallMid = hallZ0 + hallLen / 2
+	part({
+		name = "HallFloor",
+		size = Vector3.new(36, 1.5, hallLen),
+		cf = CFrame.new(0, 3.2, hallMid),
+		color = Color3.fromRGB(186, 176, 160),
+		material = Enum.Material.Concrete,
 		parent = map,
 	})
-	CollectionService:AddTag(landing, "LandingZone")
+	part({
+		name = "HallWallL",
+		size = Vector3.new(2, 18, hallLen),
+		cf = CFrame.new(-19, 12, hallMid),
+		color = Color3.fromRGB(230, 220, 205),
+		parent = map,
+	})
+	part({
+		name = "HallWallR",
+		size = Vector3.new(2, 18, hallLen),
+		cf = CFrame.new(19, 12, hallMid),
+		color = Color3.fromRGB(230, 220, 205),
+		parent = map,
+	})
+	-- Open far end. Ceiling strips for "walled" feel without boxing long throws.
+	local beamCount = math.max(1, math.floor(hallLen / 80))
+	for i = 0, beamCount - 1 do
+		part({
+			name = "HallBeam" .. i,
+			size = Vector3.new(40, 1.2, 8),
+			cf = CFrame.new(0, 21, hallZ0 + 40 + i * 80),
+			color = Color3.fromRGB(200, 170, 140),
+			parent = map,
+		})
+	end
 
-	local origin = Instance.new("Attachment")
-	origin.Name = "ThrowOrigin"
-	origin.Position = Vector3.new(0, 2.2, 0)
-	origin.Parent = pad
+	local markers = { 50, 100, 250, 500, 1000 }
+	for _, studs in markers do
+		local z = hallZ0 + studs
+		local stripe = part({
+			name = "Marker" .. studs,
+			size = Vector3.new(34, 0.4, 1.4),
+			cf = CFrame.new(0, 4.1, z),
+			color = Color3.fromRGB(255, 230, 80),
+			material = Enum.Material.Neon,
+			parent = map,
+			canCollide = false,
+		})
+		billboard(stripe, tostring(studs), Color3.fromRGB(255, 255, 200), Vector2.new(120, 40), 6)
+	end
+
+	local pads = Instance.new("Folder")
+	pads.Name = "ThrowPads"
+	pads.Parent = map
+	for i = 1, 6 do
+		local x = (i - 3.5) * 5.2
+		local pad = part({
+			name = "ThrowPad" .. i,
+			size = Vector3.new(4.6, 1.1, 6),
+			cf = CFrame.new(x, 4.4, 48),
+			color = Color3.fromRGB(70, 160, 230),
+			material = Enum.Material.Neon,
+			parent = pads,
+		})
+		pad:SetAttribute("PadIndex", i)
+		CollectionService:AddTag(pad, "ThrowPad")
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Throw"
+		prompt.ObjectText = "Paper Plane"
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = pad
+		if i == 3 or i == 4 then
+			billboard(pad, "THROW", Color3.fromRGB(255, 255, 255), Vector2.new(160, 48), 3)
+		end
+	end
+
+	-- Hangar plots
+	local plots = Instance.new("Folder")
+	plots.Name = "Plots"
+	plots.Parent = map
+	local plotCFs = {}
+	for i = 1, 4 do
+		table.insert(plotCFs, CFrame.new(-62, 4, -30 + (i - 1) * 20) * CFrame.Angles(0, math.rad(90), 0))
+	end
+	for i = 1, 4 do
+		table.insert(plotCFs, CFrame.new(62, 4, -30 + (i - 1) * 20) * CFrame.Angles(0, math.rad(-90), 0))
+	end
+	for i = 1, 4 do
+		table.insert(plotCFs, CFrame.new(-30 + (i - 1) * 20, 4, -58))
+	end
+
+	for i, cf in plotCFs do
+		local plot = Instance.new("Model")
+		plot.Name = "Plot" .. i
+		plot:SetAttribute("PlotIndex", i)
+		plot.Parent = plots
+
+		local floor = part({
+			name = "Floor",
+			size = Vector3.new(18, 1, 16),
+			cf = cf,
+			color = Color3.fromRGB(150, 110, 75),
+			material = Enum.Material.Wood,
+			parent = plot,
+		})
+		plot.PrimaryPart = floor
+		part({
+			name = "Back",
+			size = Vector3.new(18, 10, 1),
+			cf = cf * CFrame.new(0, 5.5, -8),
+			color = Color3.fromRGB(200, 130, 80),
+			parent = plot,
+		})
+		part({
+			name = "Left",
+			size = Vector3.new(1, 10, 16),
+			cf = cf * CFrame.new(-8.5, 5.5, 0),
+			color = Color3.fromRGB(190, 120, 75),
+			parent = plot,
+		})
+		part({
+			name = "Right",
+			size = Vector3.new(1, 10, 16),
+			cf = cf * CFrame.new(8.5, 5.5, 0),
+			color = Color3.fromRGB(190, 120, 75),
+			parent = plot,
+		})
+		part({
+			name = "Roof",
+			size = Vector3.new(19, 1, 17),
+			cf = cf * CFrame.new(0, 11, 0),
+			color = Color3.fromRGB(170, 80, 50),
+			parent = plot,
+		})
+
+		local stands = Instance.new("Folder")
+		stands.Name = "Stands"
+		stands.Parent = plot
+		local pedestal = part({
+			name = "Pedestal",
+			size = Vector3.new(3.4, 2.2, 3.4),
+			cf = cf * CFrame.new(0, 1.6, 2),
+			color = Color3.fromRGB(110, 80, 50),
+			material = Enum.Material.Wood,
+			parent = stands,
+		})
+		pedestal:SetAttribute("Slot", 1)
+		CollectionService:AddTag(pedestal, "DisplayStand")
+		for s = 2, 6 do
+			local col = (s - 2) % 3
+			local row = math.floor((s - 2) / 3)
+			local stand = part({
+				name = "Stand" .. s,
+				size = Vector3.new(2.4, 1.4, 2.4),
+				cf = cf * CFrame.new(-5 + col * 5, 1.2, -3 - row * 4),
+				color = Color3.fromRGB(120, 90, 60),
+				material = Enum.Material.Wood,
+				parent = stands,
+			})
+			stand:SetAttribute("Slot", s)
+			CollectionService:AddTag(stand, "DisplayStand")
+		end
+
+		local sign = part({
+			name = "Sign",
+			size = Vector3.new(10, 2, 0.4),
+			cf = cf * CFrame.new(0, 9.2, 8.2),
+			color = Color3.fromRGB(245, 230, 200),
+			parent = plot,
+			canCollide = false,
+		})
+		local bb = billboard(sign, "EMPTY HANGAR", Color3.fromRGB(90, 50, 30), Vector2.new(240, 56), 1)
+		bb.Name = "OwnerLabel"
+	end
+
+	-- Benches (east of plaza, before hallway)
+	local benches = Instance.new("Folder")
+	benches.Name = "Benches"
+	benches.Parent = map
+	local benchDefs = {
+		{ id = "Free", name = "FREE", color = Color3.fromRGB(180, 180, 170) },
+		{ id = "Bronze", name = "BRONZE", color = Color3.fromRGB(186, 110, 60) },
+		{ id = "Silver", name = "SILVER", color = Color3.fromRGB(190, 200, 210) },
+		{ id = "Gold", name = "GOLD", color = Color3.fromRGB(232, 186, 64) },
+		{ id = "Diamond", name = "DIAMOND", color = Color3.fromRGB(120, 220, 255) },
+	}
+	for i, def in benchDefs do
+		local z = 8 + (i - 1) * 8
+		local base = part({
+			name = def.id .. "Base",
+			size = Vector3.new(8, 1, 6),
+			cf = CFrame.new(40, 4.1, z),
+			color = def.color,
+			parent = benches,
+		})
+		local seat = Instance.new("Seat")
+		seat.Name = def.id .. "Seat"
+		seat.Anchored = true
+		seat.Size = Vector3.new(4, 1, 3)
+		seat.CFrame = CFrame.new(40, 5.1, z) * CFrame.Angles(0, math.rad(-90), 0)
+		seat.Color = def.color:Lerp(Color3.new(0, 0, 0), 0.15)
+		seat.Material = Enum.Material.SmoothPlastic
+		seat:SetAttribute("BenchId", def.id)
+		seat.Parent = benches
+		CollectionService:AddTag(seat, "StrengthBench")
+		local caption = def.name .. " BENCH"
+		if def.id ~= "Free" then
+			local pass = Products.GamepassByKey["Bench" .. def.id]
+			if pass then
+				caption = def.name .. "  ~R$" .. tostring(pass.priceHint)
+			end
+		end
+		billboard(base, caption, Color3.new(1, 1, 1), Vector2.new(220, 48), 5)
+	end
+
+	-- Kiosks
+	local crateKiosk = part({
+		name = "CrateKiosk",
+		size = Vector3.new(10, 8, 8),
+		cf = CFrame.new(-40, 8, 18),
+		color = Color3.fromRGB(255, 200, 70),
+		parent = map,
+	})
+	CollectionService:AddTag(crateKiosk, "CrateKiosk")
+	billboard(crateKiosk, "CRATES", Color3.fromRGB(255, 240, 180), Vector2.new(200, 56), 6)
+	local cratePrompt = Instance.new("ProximityPrompt")
+	cratePrompt.ActionText = "Open"
+	cratePrompt.ObjectText = "Crates"
+	cratePrompt.HoldDuration = 0
+	cratePrompt.Parent = crateKiosk
+
+	local shopKiosk = part({
+		name = "ShopKiosk",
+		size = Vector3.new(10, 8, 8),
+		cf = CFrame.new(-40, 8, 2),
+		color = Color3.fromRGB(80, 180, 120),
+		parent = map,
+	})
+	CollectionService:AddTag(shopKiosk, "ShopKiosk")
+	billboard(shopKiosk, "ROTATING SHOP", Color3.fromRGB(200, 255, 210), Vector2.new(240, 56), 6)
+	local shopPrompt = Instance.new("ProximityPrompt")
+	shopPrompt.ActionText = "Browse"
+	shopPrompt.ObjectText = "Shop"
+	shopPrompt.HoldDuration = 0
+	shopPrompt.Parent = shopKiosk
 
 	World._lighting()
 	map:SetAttribute("Built", true)
+	map:SetAttribute("Layout", "HubHallway")
 	return map
 end
 
-function World._enhance(map: Instance)
-	if not map:FindFirstChild("ThrowPad") then
-		return
-	end
-end
-
 function World._lighting()
-	Lighting.Brightness = 2.4
-	Lighting.ClockTime = 15.2
-	Lighting.GeographicLatitude = 22
+	Lighting.Brightness = 2.6
+	Lighting.ClockTime = 14.5
+	Lighting.GeographicLatitude = 18
 	Lighting.Ambient = Color3.fromRGB(110, 120, 140)
-	Lighting.OutdoorAmbient = Color3.fromRGB(140, 150, 170)
+	Lighting.OutdoorAmbient = Color3.fromRGB(145, 155, 170)
 	Lighting.ShadowSoftness = 0.25
 	Lighting.EnvironmentDiffuseScale = 0.6
 	Lighting.EnvironmentSpecularScale = 0.4
@@ -234,59 +398,99 @@ function World._lighting()
 	end
 
 	local atm = ensure("Atmosphere", "Atmosphere") :: Atmosphere
-	atm.Density = 0.28
-	atm.Offset = 0.2
+	atm.Density = 0.26
+	atm.Offset = 0.18
 	atm.Color = Color3.fromRGB(200, 220, 255)
 	atm.Decay = Color3.fromRGB(160, 180, 220)
-	atm.Glare = 0.15
-	atm.Haze = 1.4
+	atm.Glare = 0.12
+	atm.Haze = 1.2
 
 	local bloom = ensure("BloomEffect", "Bloom") :: BloomEffect
-	bloom.Intensity = 0.35
-	bloom.Size = 18
-	bloom.Threshold = 0.9
-
-	local rays = ensure("SunRaysEffect", "SunRays") :: SunRaysEffect
-	rays.Intensity = 0.08
-	rays.Spread = 0.4
-
-	local cc = ensure("ColorCorrectionEffect", "ColorCorrection") :: ColorCorrectionEffect
-	cc.Saturation = 0.12
-	cc.Contrast = 0.06
-	cc.Brightness = 0.02
+	bloom.Intensity = 0.32
+	bloom.Size = 16
+	bloom.Threshold = 0.92
 end
 
-function World.throwOrigin(): CFrame
-	local pad = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("ThrowPad")
-	if pad and pad:IsA("BasePart") then
-		return pad.CFrame * CFrame.new(0, 2.4, 0)
-	end
-	return CFrame.new(0, 84, 22)
+function World.map(): Instance?
+	return workspace:FindFirstChild("Map")
 end
 
-function World.throwDirection(): Vector3
-	return Vector3.new(0, 0.12, 1).Unit
-end
-
-function World.displayStands(): { BasePart }
-	local map = workspace:FindFirstChild("Map")
-	if not map then
-		return {}
-	end
-	local folder = map:FindFirstChild("DisplayStands")
+function World.throwPads(): { BasePart }
+	local map = World.map()
+	local folder = map and map:FindFirstChild("ThrowPads")
 	if not folder then
 		return {}
 	end
-	local stands = {}
+	local pads = {}
 	for _, child in folder:GetChildren() do
 		if child:IsA("BasePart") then
-			table.insert(stands, child)
+			table.insert(pads, child)
 		end
 	end
-	table.sort(stands, function(a, b)
-		return (a:GetAttribute("Slot") or 0) < (b:GetAttribute("Slot") or 0)
+	return pads
+end
+
+function World.nearestThrowPad(player: Player): BasePart?
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp or not hrp:IsA("BasePart") then
+		return nil
+	end
+	local best: BasePart? = nil
+	local bestD = Numbers.ThrowPadRange
+	for _, pad in World.throwPads() do
+		local d = (pad.Position - hrp.Position).Magnitude
+		if d < bestD then
+			bestD = d
+			best = pad
+		end
+	end
+	return best
+end
+
+function World.throwOriginFor(player: Player): CFrame?
+	local pad = World.nearestThrowPad(player)
+	if not pad then
+		return nil
+	end
+	return pad.CFrame * CFrame.new(0, 2.2, 1.5)
+end
+
+function World.throwDirection(): Vector3
+	return Vector3.new(0, 0.04, 1).Unit
+end
+
+function World.plotModels(): { Model }
+	local map = World.map()
+	local folder = map and map:FindFirstChild("Plots")
+	if not folder then
+		return {}
+	end
+	local plots = {}
+	for _, child in folder:GetChildren() do
+		if child:IsA("Model") then
+			table.insert(plots, child)
+		end
+	end
+	table.sort(plots, function(a, b)
+		return (a:GetAttribute("PlotIndex") or 0) < (b:GetAttribute("PlotIndex") or 0)
 	end)
-	return stands
+	return plots
+end
+
+function World.benchSeats(): { Seat }
+	local map = World.map()
+	local folder = map and map:FindFirstChild("Benches")
+	if not folder then
+		return {}
+	end
+	local seats = {}
+	for _, child in folder:GetChildren() do
+		if child:IsA("Seat") then
+			table.insert(seats, child)
+		end
+	end
+	return seats
 end
 
 return World

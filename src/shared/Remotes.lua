@@ -5,15 +5,17 @@ local EVENTS = {
 	"Throw",
 	"BuyUpgrade",
 	"BuyHangarUpgrade",
-	"BuyAutoThrow",
+	"BuyPlayerUpgrade",
 	"EquipPlane",
 	"UnequipPlane",
 	"OpenCrate",
 	"ClaimDaily",
-	"ClaimDailyCrate",
 	"Rebirth",
 	"RedeemCode",
 	"BuyGuaranteedPlane",
+	"BuyCosmetic",
+	"EquipCosmetic",
+	"UnequipCosmetic",
 	"ProfileUpdated",
 	"ThrowResult",
 	"CrateOpened",
@@ -22,8 +24,7 @@ local EVENTS = {
 	"Announcement",
 	"Notify",
 	"Tutorial",
-	"BoostUpdated",
-	"HangarDisplay",
+	"PlotAssigned",
 }
 
 local FUNCTIONS = {
@@ -31,6 +32,7 @@ local FUNCTIONS = {
 	"GetCrateOdds",
 	"GetRebirthPreview",
 	"GetPolicy",
+	"GetRotationShop",
 }
 
 local folder: Folder

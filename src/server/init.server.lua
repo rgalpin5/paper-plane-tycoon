@@ -10,18 +10,21 @@ local Data = require(script.Services.Data)
 local Economy = require(script.Services.Economy)
 local Monetization = require(script.Services.Monetization)
 local Hangar = require(script.Services.Hangar)
+local Plots = require(script.Services.Plots)
 local Throw = require(script.Services.Throw)
 local Crate = require(script.Services.Crate)
 local Idle = require(script.Services.Idle)
 local Daily = require(script.Services.Daily)
 local Rebirth = require(script.Services.Rebirth)
 local Codes = require(script.Services.Codes)
+local Benches = require(script.Services.Benches)
+local RotationShop = require(script.Services.RotationShop)
 
 local function hookCharacter(player: Player)
 	local function onCharacter(character)
 		local humanoid = character:WaitForChild("Humanoid", 5)
 		if humanoid and humanoid:IsA("Humanoid") then
-			humanoid.WalkSpeed = 18
+			humanoid.WalkSpeed = 20
 			humanoid.JumpPower = 50
 		end
 	end
@@ -40,11 +43,14 @@ Data.start()
 Economy.start()
 Monetization.start()
 Hangar.start()
+Plots.start()
 Throw.start()
 Crate.start()
 Idle.start()
 Daily.start()
 Rebirth.start()
 Codes.start()
+Benches.start()
+RotationShop.start()
 
-print("[Paper Plane Tycoon] Server ready.")
+print("[Paper Plane Tycoon] Hub + hallway server ready.")

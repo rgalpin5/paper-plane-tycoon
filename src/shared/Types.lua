@@ -3,7 +3,7 @@ export type Rarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary" | "My
 export type TutorialFlags = {
 	thrown: boolean,
 	upgraded: boolean,
-	thrownAfter: boolean,
+	benched: boolean,
 	complete: boolean,
 }
 
@@ -16,12 +16,6 @@ export type BoostState = {
 	doubleCoinsUntil: number,
 }
 
-export type CrateKeys = {
-	Paper: number,
-	Hangar: number,
-	Golden: number,
-}
-
 export type PlayerStats = {
 	totalCoinsEarned: number,
 	bestDistance: number,
@@ -31,14 +25,17 @@ export type PlayerStats = {
 export type PlayerData = {
 	coins: number,
 	scrap: number,
-	upgrades: { [string]: number },
+	strength: number,
+	planeLevel: number,
+	playerUpgrades: { [string]: number },
 	hangarUpgrades: { [string]: number },
 	ownedPlanes: { [string]: number },
 	equipped: { string },
+	cosmeticsOwned: { [string]: number },
+	cosmeticsEquipped: { string },
+	rotationSalt: number,
 	streak: number,
 	lastDailyClaimDay: number,
-	lastDailyCrateDay: number,
-	lastVipCrateDay: number,
 	rebirths: number,
 	pity: PityState,
 	processedPurchases: { [string]: boolean },
@@ -46,13 +43,9 @@ export type PlayerData = {
 	lastLogout: number,
 	tutorial: TutorialFlags,
 	boosts: BoostState,
-	crateKeys: CrateKeys,
 	streakShields: number,
 	codesRedeemed: { [string]: boolean },
 	totalThrows: number,
-	lastThrowAt: number,
-	combo: number,
-	luckyRolls: number,
 	stats: PlayerStats,
 }
 
@@ -60,20 +53,29 @@ export type Computed = {
 	coinMultiplier: number,
 	luckMultiplier: number,
 	throwCooldown: number,
-	autoThrow: boolean,
 	skipAnim: boolean,
-	equipSlots: number,
+	extraCosmeticSlots: boolean,
+	doubleCoins: boolean,
+	doubleLuck: boolean,
+	extraPlane: boolean,
+	offlinePlus: boolean,
+	storagePlus: boolean,
+	cosmeticSlots: number,
 	offlineHours: number,
 	idlePerMinute: number,
 	restrictedPaidRandom: boolean,
 	vip: boolean,
-	magnet: boolean,
-	rainbowTrail: boolean,
-	multiThrow: boolean,
-	boostRemaining: number,
-	capacity: number,
+	planesPerThrow: number,
+	storage: number,
+	stands: number,
 	planeMultiplier: number,
-	rebirthMultiplier: number,
+	rebirthCoinMult: number,
+	rebirthStrengthMult: number,
+	strengthGainMult: number,
+	cosmeticCoinMult: number,
+	cosmeticStrengthMult: number,
+	distancePreview: number,
+	boostRemaining: number,
 }
 
 export type Snapshot = {
@@ -84,12 +86,11 @@ export type Snapshot = {
 export type ThrowResult = {
 	distance: number,
 	coins: number,
-	combo: number,
+	strengthGain: number,
 	origin: Vector3,
 	landing: Vector3,
 	planeId: string,
 	duration: number,
-	rainbow: boolean,
 	index: number,
 	total: number,
 }

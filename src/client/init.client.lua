@@ -1,3 +1,4 @@
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
@@ -67,12 +68,12 @@ Remotes.ThrowResult.OnClientEvent:Connect(function(result)
 		Camera.follow(result.origin, result.landing, result.duration)
 	end
 	FX.coins(result.origin, result.coins)
-	if HUD.Combo then
-		FX.combo(HUD.Combo, result.combo)
-	end
 	task.delay(result.duration, function()
 		FX.land()
 		FX.burst(result.landing, Color3.fromRGB(255, 220, 120))
+		if typeof(result.distance) == "number" then
+			FX.popup(result.landing, string.format("%.0f studs", result.distance), Color3.fromRGB(255, 255, 200))
+		end
 	end)
 end)
 
@@ -91,6 +92,42 @@ Remotes.Announcement.OnClientEvent:Connect(function(message, rarity)
 	local color = Rarities.color(rarity or "Mythic")
 	FX.shake(0.55, 0.4)
 end)
+
+Remotes.PlotAssigned.OnClientEvent:Connect(function(plot)
+	if plot == 0 then
+		Toast.show("Hangar UI-only — server full", "info")
+	else
+		Toast.show("Hangar plot claimed", "success")
+	end
+end)
+
+local function wireKiosk(tag: string, pageName: string)
+	local hooked: { [Instance]: boolean } = {}
+	local function hook(inst: Instance)
+		if hooked[inst] then
+			return
+		end
+		hooked[inst] = true
+		local prompt = inst:FindFirstChildWhichIsA("ProximityPrompt")
+		if not prompt then
+			prompt = inst:WaitForChild("ProximityPrompt", 8)
+		end
+		if prompt and prompt:IsA("ProximityPrompt") then
+			prompt.Triggered:Connect(function()
+				HUD.open(pageName)
+			end)
+		end
+	end
+	for _, inst in CollectionService:GetTagged(tag) do
+		task.spawn(hook, inst)
+	end
+	CollectionService:GetInstanceAddedSignal(tag):Connect(function(inst)
+		task.spawn(hook, inst)
+	end)
+end
+
+wireKiosk("CrateKiosk", "Crates")
+wireKiosk("ShopKiosk", "Shop")
 
 pcall(function()
 	TextChatService.OnIncomingMessage = function(message)

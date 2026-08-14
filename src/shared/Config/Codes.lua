@@ -1,8 +1,8 @@
 -- Add more strings here any time. Codes are case-insensitive.
 return {
 	RELEASE = { coins = 5000, scrap = 25 },
-	PAPER = { crateKeys = { Paper = 3 } },
+	PAPER = { coins = 8000 },
 	FOLD = { boostMinutes = 30 },
-	HANGAR = { coins = 12000, crateKeys = { Hangar = 1 } },
+	HANGAR = { coins = 12000 },
 	TYCOON = { scrap = 100 },
 }

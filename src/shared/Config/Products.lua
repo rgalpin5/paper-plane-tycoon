@@ -2,6 +2,8 @@
 	Paste Creator Hub IDs here after you create Game Passes and Developer Products.
 	Leave 0 until then. The in-game shop lists every product; prompts are skipped while the ID is 0.
 
+	Do NOT create the old Auto Throw / Magnet / Rainbow list. This is the launch set.
+
 	Creator Hub: https://create.roblox.com/dashboard
 	1. Open your experience → Monetization → Passes / Developer Products
 	2. Create each row below
@@ -28,24 +30,18 @@ export type ProductDef = {
 
 local Products = {
 	Gamepasses = {
-		{ key = "AutoThrow", name = "Auto Throw", blurb = "Planes launch themselves while you hang out.", id = 0, priceHint = 99, tier = "impulse" },
-		{ key = "SkipCrateAnim", name = "Skip Crate Anim", blurb = "Instant crate results. No waiting.", id = 0, priceHint = 49, tier = "impulse" },
-		{ key = "MagnetCoins", name = "Magnet Coins", blurb = "Landing bursts pull extra coins to you.", id = 0, priceHint = 75, tier = "impulse" },
-		{ key = "RainbowTrail", name = "Rainbow Trail", blurb = "Every throw leaves a rainbow paper trail.", id = 0, priceHint = 49, tier = "impulse" },
+		{ key = "SkipCrateAnim", name = "Skip Crate Anim", blurb = "Instant crate results.", id = 0, priceHint = 49, tier = "impulse" },
+		{ key = "BenchBronze", name = "Bronze Bench", blurb = "Sit for 2× strength. No coins while seated.", id = 0, priceHint = 49, tier = "impulse" },
+		{ key = "ExtraCosmeticSlots", name = "Extra Cosmetic Slots", blurb = "Equip 5 trails/auras/trinkets instead of 3.", id = 0, priceHint = 199, tier = "mid" },
 		{ key = "DoubleCoins", name = "2× Coins", blurb = "Permanent double coins from throws and hangar.", id = 0, priceHint = 199, tier = "mid" },
-		{ key = "DoubleLuck", name = "2× Luck", blurb = "Rare+ crate odds are doubled, then re-normalized.", id = 0, priceHint = 199, tier = "mid" },
-		{ key = "FastThrow", name = "Fast Throw", blurb = "Shorter cooldown and faster auto-throw.", id = 0, priceHint = 149, tier = "mid" },
-		{ key = "ExtraEquipSlot", name = "Extra Equip Slot", blurb = "+1 plane equipped on top of hangar slots.", id = 0, priceHint = 149, tier = "mid" },
-		{ key = "DoubleDaily", name = "2× Daily", blurb = "Daily streak coin rewards are doubled.", id = 0, priceHint = 129, tier = "mid" },
-		{ key = "TripleCoins", name = "3× Coins", blurb = "Permanent triple coins. Stacks with 2× as 3×.", id = 0, priceHint = 399, tier = "high" },
-		{ key = "SuperLuck", name = "Super Luck", blurb = "Rare+ crate odds ×4, then re-normalized.", id = 0, priceHint = 449, tier = "high" },
+		{ key = "DoubleLuck", name = "2× Luck", blurb = "Rare+ crate odds doubled, then re-normalized.", id = 0, priceHint = 199, tier = "mid" },
+		{ key = "ExtraPlaneThrow", name = "Extra Plane Throw", blurb = "+1 plane per throw on top of the player upgrade.", id = 0, priceHint = 249, tier = "mid" },
+		{ key = "BenchSilver", name = "Silver Bench", blurb = "Sit for 5× strength. No coins while seated.", id = 0, priceHint = 149, tier = "mid" },
 		{ key = "OfflinePlus", name = "Offline+", blurb = "Offline hangar cap raised to 8 hours.", id = 0, priceHint = 299, tier = "high" },
-		{ key = "MultiThrow", name = "Multi-Throw", blurb = "Each throw launches 2 planes.", id = 0, priceHint = 349, tier = "high" },
-		{ key = "VIP", name = "VIP", blurb = "Chat tag, extra offline, extra daily crate, VIP pad, +15% coins.", id = 0, priceHint = 499, tier = "high" },
-		{ key = "DoubleRebirth", name = "2× Rebirth", blurb = "Rebirth multiplier gains are doubled.", id = 0, priceHint = 799, tier = "whale" },
-		{ key = "MythicStarter", name = "Mythic Starter Plane", blurb = "Start with Mythic Paper Phoenix.", id = 0, priceHint = 899, tier = "whale" },
-		{ key = "HangarMegaCapacity", name = "Hangar Mega Capacity", blurb = "+50 hangar capacity.", id = 0, priceHint = 649, tier = "whale" },
-		{ key = "BundleVIP", name = "VIP Bundle", blurb = "VIP + 2× Coins + Auto Throw in one pass.", id = 0, priceHint = 999, tier = "whale" },
+		{ key = "HangarStoragePlus", name = "Hangar Storage+", blurb = "+20 hangar storage.", id = 0, priceHint = 399, tier = "high" },
+		{ key = "VIP", name = "VIP", blurb = "Chat tag, +15% coins, 8h offline, extra daily coins.", id = 0, priceHint = 499, tier = "high" },
+		{ key = "BenchGold", name = "Gold Bench", blurb = "Sit for 12× strength. No coins while seated.", id = 0, priceHint = 399, tier = "high" },
+		{ key = "BenchDiamond", name = "Diamond Bench", blurb = "Sit for 30× strength. No coins while seated.", id = 0, priceHint = 799, tier = "whale" },
 	} :: { GamepassDef },
 
 	DevProducts = {
@@ -53,12 +49,12 @@ local Products = {
 		{ key = "CoinPackM", name = "Coin Pack M", blurb = "A stack of coins.", id = 0, priceHint = 99, kind = "coins" },
 		{ key = "CoinPackL", name = "Coin Pack L", blurb = "A suitcase of coins.", id = 0, priceHint = 249, kind = "coins" },
 		{ key = "CoinPackXL", name = "Coin Pack XL", blurb = "A vault of coins.", id = 0, priceHint = 499, kind = "coins" },
-		{ key = "CrateKeys1", name = "Paper Keys ×1", blurb = "One Paper Crate key.", id = 0, priceHint = 25, kind = "keys" },
-		{ key = "CrateKeys3", name = "Hangar Keys ×3", blurb = "Three Hangar Crate keys.", id = 0, priceHint = 79, kind = "keys" },
-		{ key = "CrateKeys10", name = "Golden Keys ×10", blurb = "Ten Golden Crate keys.", id = 0, priceHint = 399, kind = "keys" },
-		{ key = "Boost30", name = "30-min 2×", blurb = "Two times coins for 30 minutes.", id = 0, priceHint = 49, kind = "boost" },
-		{ key = "StreakShield", name = "Streak Shield", blurb = "Miss a day without resetting your streak.", id = 0, priceHint = 75, kind = "streak" },
-		{ key = "LuckyRoll", name = "Lucky Roll", blurb = "Next crate open uses Super Luck odds (disclosed in Details).", id = 0, priceHint = 99, kind = "luck" },
+		{ key = "CratePaper", name = "Open Paper Crate", blurb = "One Paper Crate roll. Odds in Details.", id = 0, priceHint = 25, kind = "crate" },
+		{ key = "CrateTape", name = "Open Tape Crate", blurb = "One Tape Crate roll. Odds in Details.", id = 0, priceHint = 79, kind = "crate" },
+		{ key = "CrateBox", name = "Open Box Crate", blurb = "One Box Crate roll. Odds in Details.", id = 0, priceHint = 149, kind = "crate" },
+		{ key = "CrateHangar", name = "Open Hangar Crate", blurb = "One Hangar Crate roll. Odds in Details.", id = 0, priceHint = 249, kind = "crate" },
+		{ key = "CrateGolden", name = "Open Golden Crate", blurb = "One Golden Crate roll. Odds in Details.", id = 0, priceHint = 399, kind = "crate" },
+		{ key = "ShopReroll", name = "Reroll Rotating Shop", blurb = "New 3 cosmetics until this 4-hour window ends.", id = 0, priceHint = 49, kind = "reroll" },
 	} :: { ProductDef },
 
 	CoinPackAmounts = {
@@ -66,6 +62,14 @@ local Products = {
 		CoinPackM = 120000,
 		CoinPackL = 700000,
 		CoinPackXL = 3_500_000,
+	},
+
+	CrateProductToId = {
+		CratePaper = "Paper",
+		CrateTape = "Tape",
+		CrateBox = "Box",
+		CrateHangar = "Hangar",
+		CrateGolden = "Golden",
 	},
 }
 

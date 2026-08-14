@@ -6,6 +6,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Products = Config.Products
+local Cosmetics = Config.Cosmetics
 
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
@@ -91,50 +92,162 @@ function ShopUI.mount(gui: ScreenGui)
 		if not c then
 			return false
 		end
-		if key == "AutoThrow" then
-			return c.autoThrow
+		-- World seats are the real gate; keep BUY so players can gift/prompt from the shop.
+		if string.sub(key, 1, 5) == "Bench" then
+			return false
 		end
 		if key == "SkipCrateAnim" then
 			return c.skipAnim
 		end
-		if key == "MagnetCoins" then
-			return c.magnet
-		end
-		if key == "RainbowTrail" then
-			return c.rainbowTrail
-		end
-		if key == "FastThrow" then
-			return c.throwCooldown < 0.8
-		end
-		if key == "VIP" or key == "BundleVIP" then
+		if key == "VIP" then
 			return c.vip
 		end
-		if key == "MultiThrow" then
-			return c.multiThrow
-		end
-		if key == "OfflinePlus" then
-			return c.offlineHours >= 7
-		end
-		if key == "HangarMegaCapacity" then
-			return c.capacity >= 50
-		end
-		if key == "TripleCoins" then
-			return c.coinMultiplier >= 3
+		if key == "ExtraCosmeticSlots" then
+			return c.extraCosmeticSlots
 		end
 		if key == "DoubleCoins" then
-			return c.coinMultiplier >= 2
-		end
-		if key == "SuperLuck" then
-			return c.luckMultiplier >= 4
+			return c.doubleCoins
 		end
 		if key == "DoubleLuck" then
-			return c.luckMultiplier >= 2
+			return c.doubleLuck
+		end
+		if key == "ExtraPlaneThrow" then
+			return c.extraPlane
+		end
+		if key == "OfflinePlus" then
+			return c.offlinePlus
+		end
+		if key == "HangarStoragePlus" then
+			return c.storagePlus
 		end
 		return false
 	end
 
 	local function rebuild()
 		Util.clear(scroll)
+		local snap = State.snapshot
+		if not snap then
+			return
+		end
+
+		Util.label({
+			parent = scroll,
+			text = "ROTATING  (trails / auras / trinkets — 3 slots, +2 with pass)",
+			size = UDim2.new(1, 0, 0, 28),
+			font = Theme.Fonts.Title,
+			auto = Enum.AutomaticSize.Y,
+			textSize = 18,
+		})
+
+		local rotation = Remotes.GetRotationShop:InvokeServer()
+		if rotation then
+			Util.label({
+				parent = scroll,
+				text = "Equipped "
+					.. #rotation.equipped
+					.. "/"
+					.. tostring(rotation.slots)
+					.. "  •  Rotates in "
+					.. Format.time(math.max(0, rotation.endsAt - os.time())),
+				size = UDim2.new(1, 0, 0, 24),
+				auto = Enum.AutomaticSize.Y,
+				textSize = 16,
+				color = Theme.Gold,
+			})
+			for _, item in rotation.items do
+				local frame = Util.panel({ parent = scroll, size = UDim2.new(1, -8, 0, 78), bg = Theme.Panel2 })
+				Util.label({
+					parent = frame,
+					text = item.name .. "  " .. item.kind,
+					size = UDim2.new(0.58, 0, 0, 26),
+					pos = UDim2.fromOffset(10, 6),
+					font = Theme.Fonts.Title,
+				})
+				Util.label({
+					parent = frame,
+					text = item.blurb .. "  " .. Format.abbrev(item.cost),
+					size = UDim2.new(0.58, 0, 0, 36),
+					pos = UDim2.fromOffset(10, 34),
+					color = Theme.Muted,
+				})
+				if item.owned then
+					local eq = table.find(rotation.equipped, item.id) ~= nil
+					local b = Util.button({
+						parent = frame,
+						text = if eq then "OFF" else "EQUIP",
+						size = UDim2.fromOffset(78, 36),
+						pos = UDim2.new(1, -16, 0.5, 0),
+						anchor = Vector2.new(1, 0.5),
+						bg = if eq then Theme.Danger else Theme.Green,
+					})
+					b.MouseButton1Click:Connect(function()
+						if eq then
+							Remotes.UnequipCosmetic:FireServer(item.id)
+						else
+							Remotes.EquipCosmetic:FireServer(item.id)
+						end
+					end)
+				else
+					local b = Util.button({
+						parent = frame,
+						text = "BUY",
+						size = UDim2.fromOffset(78, 36),
+						pos = UDim2.new(1, -16, 0.5, 0),
+						anchor = Vector2.new(1, 0.5),
+						bg = Theme.Gold,
+					})
+					b.MouseButton1Click:Connect(function()
+						Remotes.BuyCosmetic:FireServer(item.id)
+					end)
+				end
+			end
+
+			local ownedList = {}
+			for id, n in snap.data.cosmeticsOwned do
+				if n > 0 then
+					table.insert(ownedList, id)
+				end
+			end
+			if #ownedList > 0 then
+				Util.label({
+					parent = scroll,
+					text = "YOUR COSMETICS",
+					size = UDim2.new(1, 0, 0, 22),
+					font = Theme.Fonts.Title,
+					auto = Enum.AutomaticSize.Y,
+					textSize = 16,
+				})
+				for _, id in ownedList do
+					local def = Cosmetics.get(id)
+					if def then
+						local eq = table.find(snap.data.cosmeticsEquipped, id) ~= nil
+						local row = Util.panel({ parent = scroll, size = UDim2.new(1, -8, 0, 44), bg = Theme.Panel2 })
+						Util.label({
+							parent = row,
+							text = def.name,
+							size = UDim2.new(0.62, 0, 1, 0),
+							pos = UDim2.fromOffset(10, 0),
+						})
+						local b = Util.button({
+							parent = row,
+							text = if eq then "OFF" else "ON",
+							size = UDim2.fromOffset(56, 30),
+							pos = UDim2.new(1, -12, 0.5, 0),
+							anchor = Vector2.new(1, 0.5),
+							bg = if eq then Theme.Danger else Theme.Sky,
+						})
+						b.MouseButton1Click:Connect(function()
+							if eq then
+								Remotes.UnequipCosmetic:FireServer(id)
+							else
+								Remotes.EquipCosmetic:FireServer(id)
+							end
+						end)
+					end
+				end
+			end
+		end
+
 		Util.label({
 			parent = scroll,
 			text = "GAME PASSES  (one-time)",
@@ -145,6 +258,9 @@ function ShopUI.mount(gui: ScreenGui)
 		})
 		for _, def in Products.Gamepasses do
 			local has = owned(def.key)
+			if string.sub(def.key, 1, 5) == "Bench" then
+				has = false
+			end
 			local frame = Util.panel({
 				parent = scroll,
 				size = UDim2.new(1, -8, 0, 70),
@@ -181,43 +297,46 @@ function ShopUI.mount(gui: ScreenGui)
 
 		Util.label({
 			parent = scroll,
-			text = "COIN PACKS & KEYS  (repeatable)",
+			text = "COIN PACKS & CRATE ROLLS  (repeatable)",
 			size = UDim2.new(1, 0, 0, 24),
 			font = Theme.Fonts.Title,
 			auto = Enum.AutomaticSize.Y,
 			textSize = 18,
 		})
+		local restricted = snap.computed.restrictedPaidRandom
 		for _, def in Products.DevProducts do
-			local extra = ""
-			if Products.CoinPackAmounts[def.key] then
-				extra = "  +" .. Format.abbrev(Products.CoinPackAmounts[def.key])
+			if def.kind ~= "crate" or not restricted then
+				local extra = ""
+				if Products.CoinPackAmounts[def.key] then
+					extra = "  +" .. Format.abbrev(Products.CoinPackAmounts[def.key])
+				end
+				local frame = Util.panel({ parent = scroll, size = UDim2.new(1, -8, 0, 70), bg = Theme.Panel2 })
+				Util.label({
+					parent = frame,
+					text = def.name .. extra,
+					size = UDim2.new(0.62, 0, 0, 28),
+					pos = UDim2.fromOffset(10, 4),
+					font = Theme.Fonts.Title,
+				})
+				Util.label({
+					parent = frame,
+					text = def.blurb,
+					size = UDim2.new(0.62, 0, 0, 30),
+					pos = UDim2.fromOffset(10, 34),
+					color = Theme.Muted,
+				})
+				local b = Util.button({
+					parent = frame,
+					text = "R$" .. tostring(def.priceHint),
+					size = UDim2.fromOffset(78, 36),
+					pos = UDim2.new(1, -16, 0.5, 0),
+					anchor = Vector2.new(1, 0.5),
+					bg = Theme.Gold,
+				})
+				b.MouseButton1Click:Connect(function()
+					promptProduct(def.id)
+				end)
 			end
-			local frame = Util.panel({ parent = scroll, size = UDim2.new(1, -8, 0, 70), bg = Theme.Panel2 })
-			Util.label({
-				parent = frame,
-				text = def.name .. extra,
-				size = UDim2.new(0.62, 0, 0, 28),
-				pos = UDim2.fromOffset(10, 4),
-				font = Theme.Fonts.Title,
-			})
-			Util.label({
-				parent = frame,
-				text = def.blurb,
-				size = UDim2.new(0.62, 0, 0, 30),
-				pos = UDim2.fromOffset(10, 34),
-				color = Theme.Muted,
-			})
-			local b = Util.button({
-				parent = frame,
-				text = "R$" .. tostring(def.priceHint),
-				size = UDim2.fromOffset(78, 36),
-				pos = UDim2.new(1, -16, 0.5, 0),
-				anchor = Vector2.new(1, 0.5),
-				bg = Theme.Gold,
-			})
-			b.MouseButton1Click:Connect(function()
-				promptProduct(def.id)
-			end)
 		end
 	end
 

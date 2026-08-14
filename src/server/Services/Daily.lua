@@ -37,8 +37,8 @@ function Daily.preview(player: Player)
 	end
 	local dayIndex = math.clamp(if claimed then data.streak else nextStreak, 1, 7)
 	local coins = Numbers.DailyRewards[dayIndex] or 500
-	if Monetization.flags(player).doubleDaily then
-		coins *= 2
+	if Monetization.flags(player).vip then
+		coins = math.floor(coins * 1.25)
 	end
 	return {
 		streak = data.streak,
@@ -81,8 +81,8 @@ function Daily.start()
 
 		data.lastDailyClaimDay = today
 		local coins = Numbers.DailyRewards[data.streak] or 500
-		if Monetization.flags(player).doubleDaily then
-			coins *= 2
+		if Monetization.flags(player).vip then
+			coins = math.floor(coins * 1.25)
 		end
 		data.coins += coins
 		data.stats.totalCoinsEarned += coins
@@ -95,14 +95,9 @@ function Daily.start()
 
 		local gaveCrate = false
 		if data.streak == 7 then
-			Crate.open(player, "Daily", true)
+			Crate.open(player, "Paper", { free = true })
 			gaveCrate = true
 			data.streak = 0
-		end
-
-		if Monetization.flags(player).vip and data.lastVipCrateDay ~= today then
-			data.lastVipCrateDay = today
-			data.crateKeys.Paper = (data.crateKeys.Paper or 0) + 1
 		end
 
 		Remotes.DailyClaimed:FireClient(player, {

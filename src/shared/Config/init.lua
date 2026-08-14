@@ -6,6 +6,7 @@ local Config = {
 	Numbers = require(script.Numbers),
 	Codes = require(script.Codes),
 	Rarities = require(script.Rarities),
+	Cosmetics = require(script.Cosmetics),
 }
 
 return Config

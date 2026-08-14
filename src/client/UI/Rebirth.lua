@@ -12,7 +12,7 @@ local RebirthUI = {}
 function RebirthUI.mount(gui: ScreenGui)
 	local page = Util.panel({
 		parent = gui,
-		size = UDim2.new(0.9, 0, 0.58, 0),
+		size = UDim2.new(0.9, 0, 0.64, 0),
 		pos = UDim2.new(0.5, 0, 0.47, 0),
 		anchor = Vector2.new(0.5, 0.5),
 		z = 20,
@@ -38,7 +38,7 @@ function RebirthUI.mount(gui: ScreenGui)
 	local info = Util.label({
 		parent = page,
 		text = "",
-		size = UDim2.new(1, -24, 0, 160),
+		size = UDim2.new(1, -24, 0, 200),
 		pos = UDim2.fromOffset(12, 50),
 		color = Theme.Paper,
 	})
@@ -63,11 +63,14 @@ function RebirthUI.mount(gui: ScreenGui)
 			return
 		end
 		info.Text = string.format(
-			"Cost  %s coins\nCurrent  ×%.2f\nAfter  ×%.2f  (+%.0f%% forever)\nRebirths  %d\n\nKeeps: %s\nResets: %s",
+			"Cost  %s coins\nCoins  ×%.2f → ×%.2f  (+%.0f%% forever)\nStrength  ×%.2f → ×%.2f  (+%.0f%% forever)\nRebirths  %d\n\nKeeps: %s\nResets: %s",
 			Format.abbrev(preview.cost),
-			preview.currentMultiplier,
-			preview.nextMultiplier,
-			preview.gain * 100,
+			preview.currentCoin,
+			preview.nextCoin,
+			preview.coinGain * 100,
+			preview.currentStrength,
+			preview.nextStrength,
+			preview.strengthGain * 100,
 			preview.rebirths,
 			table.concat(preview.keeps, ", "),
 			table.concat(preview.resets, ", ")

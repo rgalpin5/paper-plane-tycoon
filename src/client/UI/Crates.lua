@@ -1,17 +1,29 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Crates = Config.Crates
+local Products = Config.Products
 local Rarities = Config.Rarities
 
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 local Util = require(script.Parent.Util)
 local HUD = require(script.Parent.HUD)
+local Toast = require(script.Parent.Toast)
 
 local CratesUI = {}
+
+local function promptProduct(id: number)
+	if id == 0 then
+		Toast.show("Paste the Creator Hub ID into Products.lua", "error")
+		return
+	end
+	MarketplaceService:PromptProductPurchase(Players.LocalPlayer, id)
+end
 
 function CratesUI.mount(gui: ScreenGui)
 	local page = Util.panel({
@@ -155,7 +167,7 @@ function CratesUI.mount(gui: ScreenGui)
 		if restricted then
 			Util.label({
 				parent = scroll,
-				text = "Paid random crates are hidden in your region. Use the Index to buy a guaranteed plane, or claim the free Daily crate.",
+				text = "Paid random Robux rolls are hidden in your region. Coin crates still work. Use the Index to buy a guaranteed plane.",
 				size = UDim2.new(1, -8, 0, 64),
 				auto = Enum.AutomaticSize.Y,
 				textSize = 16,
@@ -164,12 +176,17 @@ function CratesUI.mount(gui: ScreenGui)
 		end
 
 		for _, crate in Crates.List do
-			if not (crate.paidRandom and restricted) then
-			local frame = Util.panel({ parent = scroll, size = UDim2.new(1, -8, 0, 108), bg = Theme.Panel2 })
+			local robuxKey = crate.robuxKey
+			local showRobux = robuxKey ~= nil and not restricted
+			local frame = Util.panel({
+				parent = scroll,
+				size = UDim2.new(1, -8, 0, if showRobux then 124 else 108),
+				bg = Theme.Panel2,
+			})
 			Util.label({
 				parent = frame,
 				text = crate.name,
-				size = UDim2.new(0.7, 0, 0, 28),
+				size = UDim2.new(0.62, 0, 0, 28),
 				pos = UDim2.fromOffset(10, 6),
 				font = Theme.Fonts.Title,
 				color = crate.color,
@@ -177,31 +194,49 @@ function CratesUI.mount(gui: ScreenGui)
 			Util.label({
 				parent = frame,
 				text = crate.blurb,
-				size = UDim2.new(0.7, 0, 0, 32),
+				size = UDim2.new(0.62, 0, 0, 36),
 				pos = UDim2.fromOffset(10, 34),
 				color = Theme.Muted,
 			})
-			local costText = "FREE"
 			if crate.currency == "coins" then
-				costText = Format.abbrev(crate.cost)
-			elseif crate.currency == "keys" then
-				costText = "KEY"
+				Util.label({
+					parent = frame,
+					text = Format.abbrev(crate.cost) .. " coins",
+					size = UDim2.new(0.62, 0, 0, 22),
+					pos = UDim2.fromOffset(10, 70),
+					color = Theme.Gold,
+				})
 			end
+
 			local open = Util.button({
 				parent = frame,
-				text = costText,
-				size = UDim2.fromOffset(90, 40),
-				pos = UDim2.new(1, -16, 0, 16),
+				text = "OPEN",
+				size = UDim2.fromOffset(90, 36),
+				pos = UDim2.new(1, -16, 0, 10),
 				anchor = Vector2.new(1, 0),
 				bg = Theme.Accent,
 			})
 			open.MouseButton1Click:Connect(function()
-				if crate.id == "Daily" then
-					Remotes.ClaimDailyCrate:FireServer()
-				else
-					Remotes.OpenCrate:FireServer(crate.id)
-				end
+				Remotes.OpenCrate:FireServer(crate.id)
 			end)
+
+			if showRobux and robuxKey then
+				local product = Products.ProductByKey[robuxKey]
+				if product then
+					local robux = Util.button({
+						parent = frame,
+						text = "R$" .. tostring(product.priceHint),
+						size = UDim2.fromOffset(90, 32),
+						pos = UDim2.new(1, -16, 0, 50),
+						anchor = Vector2.new(1, 0),
+						bg = Theme.Gold,
+					})
+					robux.MouseButton1Click:Connect(function()
+						promptProduct(product.id)
+					end)
+				end
+			end
+
 			local det = Util.button({
 				parent = frame,
 				text = "Details",
@@ -213,7 +248,6 @@ function CratesUI.mount(gui: ScreenGui)
 			det.MouseButton1Click:Connect(function()
 				showDetails(crate.id)
 			end)
-			end
 		end
 	end
 

@@ -3,7 +3,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Numbers = Config.Numbers
-local Upgrades = Config.Upgrades
 
 local Data = require(script.Parent.Data)
 local Economy = require(script.Parent.Economy)
@@ -19,41 +18,30 @@ flights.Parent = workspace
 
 local Throw = {}
 
-local function rollDistance(data, flags): number
-	local expected = Stats.distance(data, flags)
-	local variance = Stats.variance(data)
-	local t = math.random()
-	return expected * ((1 - variance) + t * variance)
+local function seated(player: Player): boolean
+	local char = player.Character
+	local hum = char and char:FindFirstChildWhichIsA("Humanoid")
+	return hum ~= nil and hum.Sit == true
 end
 
-local function coinsFor(player, data, flags, distance: number, isFirst: boolean): number
-	local cps = Stats.coinsPerStud(data, flags)
-	local coins = distance * cps
-	if data.totalThrows < Numbers.EarlyThrowBonusThrows then
-		coins *= Numbers.EarlyThrowMultiplier
+local function pruneFlights()
+	local kids = flights:GetChildren()
+	while #kids > Numbers.MaxRenderedFlights do
+		local oldest = kids[1]
+		oldest:Destroy()
+		table.remove(kids, 1)
 	end
-	if isFirst then
-		coins = math.max(coins, Numbers.TutorialFirstThrowCoins)
-	end
-	local combo = data.combo or 0
-	coins *= 1 + math.min(combo, Numbers.ComboMax) * Numbers.ComboCoinBonus
-	return math.max(1, math.floor(coins + 0.5))
 end
 
-local function spawnFlight(player: Player, planeId: string, origin: CFrame, landing: Vector3, duration: number, rainbow: boolean)
+local function spawnFlight(player: Player, planeId: string, cosmetics, origin: CFrame, landing: Vector3, duration: number)
+	pruneFlights()
 	local model = PlaneFactory.create(planeId)
-	if rainbow then
-		PlaneFactory.setRainbowTrail(model)
-	end
+	PlaneFactory.applyCosmetics(model, cosmetics)
 	model:SetAttribute("Owner", player.UserId)
 	model.Parent = flights
 	model:PivotTo(origin)
 
 	local start = origin.Position
-	local dir = (landing - start)
-	local look = CFrame.lookAt(start, start + dir)
-	model:PivotTo(look)
-
 	task.spawn(function()
 		local t0 = os.clock()
 		while os.clock() - t0 < duration and model.Parent do
@@ -66,32 +54,32 @@ local function spawnFlight(player: Player, planeId: string, origin: CFrame, land
 			model:PivotTo(CFrame.lookAt(pos, nextPos))
 			task.wait()
 		end
-		task.wait(0.35)
+		task.wait(0.3)
 		if model.Parent then
 			model:Destroy()
 		end
 	end)
-
-	return model
 end
 
-local function doOneThrow(player: Player, data, flags, index: number, total: number)
-	local origin = World.throwOrigin()
-	local direction = World.throwDirection()
-	local distance = rollDistance(data, flags)
-	local now = os.clock()
-	if data.lastThrowAt > 0 and (now - data.lastThrowAt) <= Numbers.ComboWindow then
-		data.combo = math.min(Numbers.ComboMax, (data.combo or 0) + 1)
-	else
-		data.combo = 1
-	end
-	data.lastThrowAt = now
-
+local function doOneThrow(player: Player, data, flags, origin: CFrame, index: number, total: number)
+	local expected = Stats.distance(data, flags)
+	local distance = expected * (0.92 + math.random() * 0.16)
 	local first = data.totalThrows == 0
 	data.totalThrows += 1
-	local coins = coinsFor(player, data, flags, distance, first)
+
+	local coins = Stats.coinsForDistance(data, flags, distance)
+	if data.totalThrows <= Numbers.EarlyThrowBonusThrows then
+		coins *= Numbers.EarlyThrowMultiplier
+	end
+	if first then
+		coins = math.max(coins, Numbers.TutorialFirstThrowCoins)
+	end
+	coins = math.max(1, math.floor(coins + 0.5))
+
+	local strGain = Stats.throwStrengthGain(data, flags)
 	data.coins += coins
 	data.stats.totalCoinsEarned += coins
+	data.strength += strGain
 	if distance > data.stats.bestDistance then
 		data.stats.bestDistance = distance
 	end
@@ -99,63 +87,79 @@ local function doOneThrow(player: Player, data, flags, index: number, total: num
 	if not data.tutorial.thrown then
 		data.tutorial.thrown = true
 		Remotes.Tutorial:FireClient(player, "upgrade")
-	elseif data.tutorial.upgraded and not data.tutorial.thrownAfter then
-		data.tutorial.thrownAfter = true
-		data.tutorial.complete = true
-		Remotes.Tutorial:FireClient(player, "done")
+	elseif data.tutorial.upgraded and not data.tutorial.complete then
+		if data.tutorial.benched then
+			data.tutorial.complete = true
+			Remotes.Tutorial:FireClient(player, "done")
+		else
+			Remotes.Tutorial:FireClient(player, "bench")
+		end
 	end
 
-	local duration = math.clamp(distance / Numbers.FlightSpeed, 0.7, 3.2)
-	local landing = origin.Position + direction * distance + Vector3.new(0, -8, 0)
-	spawnFlight(player, data.equipped[1] or "FoldedNote", origin, landing, duration, flags.rainbowTrail)
+	local duration = math.clamp(distance / Numbers.FlightSpeed, 0.6, 6)
+	local dir = World.throwDirection()
+	local landing = origin.Position + dir * distance
+	local planeId = Stats.equippedPlaneId(data)
+	spawnFlight(player, planeId, data.cosmeticsEquipped, origin, landing, duration)
 
-	local result = {
+	Remotes.ThrowResult:FireClient(player, {
 		distance = distance,
 		coins = coins,
-		combo = data.combo,
+		strengthGain = strGain,
 		origin = origin.Position,
 		landing = landing,
-		planeId = data.equipped[1] or "FoldedNote",
+		planeId = planeId,
 		duration = duration,
-		rainbow = flags.rainbowTrail,
 		index = index,
 		total = total,
-	}
-	Remotes.ThrowResult:FireClient(player, result)
-	return result
+	})
 end
 
-function Throw.perform(player: Player, fromAuto: boolean?)
+function Throw.perform(player: Player)
 	local data = Data.get(player)
 	if not data then
 		return
 	end
-	local flags = Monetization.flags(player)
-	if fromAuto then
-		local auto = flags.autoThrow or (data.hangarUpgrades.AutoThrow or 0) >= 1
-		if not auto then
-			return
-		end
+	if seated(player) then
+		Economy.notify(player, "Stand up to throw. Benches are strength only.", "info")
+		return
+	end
+	local origin = World.throwOriginFor(player)
+	if not origin then
+		Economy.notify(player, "Walk onto a THROW pad in the hallway.", "info")
+		return
 	end
 
-	local cooldown = Stats.throwCooldown(flags)
+	local flags = Monetization.flags(player)
 	local now = os.clock()
-	if lastThrow[player] and now - lastThrow[player] < cooldown * 0.85 then
+	if lastThrow[player] and now - lastThrow[player] < Numbers.ThrowCooldown * 0.85 then
 		return
 	end
 	lastThrow[player] = now
 
-	local total = if flags.multiThrow then Numbers.MultiThrowCount else 1
+	local total = Stats.planesPerThrow(data, flags)
 	for i = 1, total do
-		doOneThrow(player, data, flags, i, total)
+		if i > 1 then
+			task.wait(Numbers.VolleyStagger)
+		end
+		doOneThrow(player, data, flags, origin, i, total)
 	end
 	Data.replicate(player)
 end
 
 function Throw.start()
 	Remotes.Throw.OnServerEvent:Connect(function(player)
-		Throw.perform(player, false)
+		Throw.perform(player)
 	end)
+
+	for _, pad in World.throwPads() do
+		local prompt = pad:FindFirstChildWhichIsA("ProximityPrompt")
+		if prompt then
+			prompt.Triggered:Connect(function(player)
+				Throw.perform(player)
+			end)
+		end
+	end
 end
 
 return Throw

@@ -12,11 +12,9 @@ local HUD = {}
 local pages: { [string]: Frame } = {}
 local current: string? = nil
 local overlay: Frame
-local throwBtn: TextButton
 local coinsLabel: TextLabel
+local strengthLabel: TextLabel
 local scrapLabel: TextLabel
-local keysLabel: TextLabel
-local comboLabel: TextLabel
 local boostLabel: TextLabel
 local lastThrow = 0
 
@@ -58,9 +56,8 @@ local function refresh(snap)
 		return
 	end
 	coinsLabel.Text = Format.abbrev(snap.data.coins)
+	strengthLabel.Text = "STR " .. Format.abbrev(snap.data.strength)
 	scrapLabel.Text = Format.abbrev(snap.data.scrap) .. " scrap"
-	local keys = snap.data.crateKeys
-	keysLabel.Text = string.format("P %d  H %d  G %d", keys.Paper or 0, keys.Hangar or 0, keys.Golden or 0)
 	local remain = snap.computed.boostRemaining or 0
 	boostLabel.Visible = remain > 0
 	if remain > 0 then
@@ -87,18 +84,19 @@ function HUD.mount(gui: ScreenGui)
 		font = Theme.Fonts.Title,
 		color = Theme.Gold,
 	})
+	strengthLabel = Util.label({
+		parent = top,
+		text = "STR 10",
+		size = UDim2.new(0.32, 0, 0.75, 0),
+		pos = UDim2.new(0.36, 0, 0.5, 0),
+		anchor = Vector2.new(0, 0.5),
+		font = Theme.Fonts.Title,
+		color = Theme.Accent,
+	})
 	scrapLabel = Util.label({
 		parent = top,
 		text = "0 scrap",
-		size = UDim2.new(0.28, 0, 0.7, 0),
-		pos = UDim2.new(0.38, 0, 0.5, 0),
-		anchor = Vector2.new(0, 0.5),
-		color = Theme.Paper,
-	})
-	keysLabel = Util.label({
-		parent = top,
-		text = "P 0  H 0  G 0",
-		size = UDim2.new(0.3, -8, 0.7, 0),
+		size = UDim2.new(0.28, -8, 0.7, 0),
 		pos = UDim2.new(1, -8, 0.5, 0),
 		anchor = Vector2.new(1, 0.5),
 		align = Enum.TextXAlignment.Right,
@@ -118,48 +116,30 @@ function HUD.mount(gui: ScreenGui)
 	})
 	boostLabel.Visible = false
 
-	comboLabel = Util.label({
+	local hint = Util.label({
 		parent = gui,
-		text = "",
-		size = UDim2.fromOffset(200, 40),
-		pos = UDim2.new(0.5, 0, 0.42, 0),
-		anchor = Vector2.new(0.5, 0.5),
-		align = Enum.TextXAlignment.Center,
-		font = Theme.Fonts.Title,
-		color = Theme.Accent,
-		z = 8,
-	})
-	HUD.Combo = comboLabel
-
-	throwBtn = Util.button({
-		parent = gui,
-		text = "THROW",
-		size = UDim2.fromOffset(168, 168),
-		pos = UDim2.new(0.5, 0, 1, -28),
+		text = "Walk onto a THROW pad  •  Space to launch",
+		size = UDim2.new(0.7, 0, 0, 28),
+		pos = UDim2.new(0.5, 0, 1, -18),
 		anchor = Vector2.new(0.5, 1),
-		bg = Theme.Sky,
-		radius = 84,
-		z = 10,
+		align = Enum.TextXAlignment.Center,
+		color = Theme.Paper,
+		z = 6,
 	})
-	throwBtn.Font = Theme.Fonts.Title
+	hint.TextTransparency = 0.15
 
-	local function tryThrow()
-		local snap = State.snapshot
-		local cd = if snap then snap.computed.throwCooldown else 1.15
-		if os.clock() - lastThrow < cd * 0.5 then
-			return
-		end
-		lastThrow = os.clock()
-		Remotes.Throw:FireServer()
-	end
-
-	throwBtn.MouseButton1Click:Connect(tryThrow)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed then
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Space then
-			tryThrow()
+			local snap = State.snapshot
+			local cd = if snap then snap.computed.throwCooldown else 0.95
+			if os.clock() - lastThrow < cd * 0.5 then
+				return
+			end
+			lastThrow = os.clock()
+			Remotes.Throw:FireServer()
 		end
 	end)
 

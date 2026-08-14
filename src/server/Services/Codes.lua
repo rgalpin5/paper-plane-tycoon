@@ -36,11 +36,6 @@ function CodeService.start()
 		if reward.scrap then
 			data.scrap += reward.scrap
 		end
-		if reward.crateKeys then
-			for crateId, amount in reward.crateKeys do
-				data.crateKeys[crateId] = (data.crateKeys[crateId] or 0) + amount
-			end
-		end
 		if reward.boostMinutes then
 			local now = os.time()
 			data.boosts.doubleCoinsUntil = math.max(data.boosts.doubleCoinsUntil, now) + reward.boostMinutes * 60
