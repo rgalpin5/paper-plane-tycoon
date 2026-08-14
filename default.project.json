@@ -1,0 +1,98 @@
+{
+  "name": "PaperPlaneTycoon",
+  "globIgnorePaths": [
+    "**/.git/**",
+    "**/__tests__/**",
+    "**/*.test.luau",
+    "**/*.spec.lua",
+    "**/jest.config.luau",
+    "**/wally.toml"
+  ],
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "Packages": {
+        "$className": "Folder",
+        "Promise": {
+          "$path": "Packages/_Index/evaera_promise@4.0.0/promise/lib"
+        },
+        "Signal": {
+          "$path": "Packages/_Index/sleitnick_signal@2.0.3/signal"
+        },
+        "Janitor": {
+          "$path": "Packages/_Index/howmanysmall_janitor@1.18.3/janitor/src"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "Server": {
+        "$path": "src/server"
+      },
+      "ServerPackages": {
+        "$className": "Folder",
+        "ProfileStore": {
+          "$path": "ServerPackages/_Index/lm-loleris_profilestore@1.0.3/profilestore/ProfileStore.luau"
+        }
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "CameraMaxZoomDistance": 64,
+        "HealthDisplayDistance": 0,
+        "NameDisplayDistance": 24
+      },
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "Client": {
+          "$path": "src/client"
+        }
+      },
+      "StarterCharacterScripts": {
+        "$className": "StarterCharacterScripts",
+        "$ignoreUnknownInstances": true
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "ResetPlayerGuiOnSpawn": false
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "Gravity": 196.2
+      },
+      "Map": {
+        "$path": "place"
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$ignoreUnknownInstances": true
+    },
+    "SoundService": {
+      "$className": "SoundService",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    },
+    "TextChatService": {
+      "$className": "TextChatService",
+      "$ignoreUnknownInstances": true
+    }
+  }
+}

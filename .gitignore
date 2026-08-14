@@ -1,0 +1,13 @@
+# Roblox binary places
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Tooling
+sourcemap.json
+/Roblox.toml
+
+# OS
+.DS_Store
+Thumbs.db

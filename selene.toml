@@ -1,0 +1,11 @@
+std = "roblox"
+
+[lints]
+global_usage = "allow"
+shadowing = "allow"
+unused_variable = "warn"
+empty_if = "warn"
+if_same_then_else = "warn"
+parenthese_conditions = "allow"
+multiple_statements = "allow"
+unbalanced_assignments = "warn"

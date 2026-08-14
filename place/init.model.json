@@ -1,0 +1,16 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "WorldAnchor",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "Transparency": 1,
+        "Size": [1, 1, 1],
+        "Position": [0, 80, 0]
+      }
+    }
+  ]
+}
