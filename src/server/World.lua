@@ -197,19 +197,19 @@ function World.build()
 		end
 	end
 
-	-- Hangar plots
+	-- Hangar plots in a ring around the plaza, leaving the +Z hallway open
 	local plots = Instance.new("Folder")
 	plots.Name = "Plots"
 	plots.Parent = map
 	local plotCFs = {}
-	for i = 1, 4 do
-		table.insert(plotCFs, CFrame.new(-62, 4, -30 + (i - 1) * 20) * CFrame.Angles(0, math.rad(90), 0))
-	end
-	for i = 1, 4 do
-		table.insert(plotCFs, CFrame.new(62, 4, -30 + (i - 1) * 20) * CFrame.Angles(0, math.rad(-90), 0))
-	end
-	for i = 1, 4 do
-		table.insert(plotCFs, CFrame.new(-30 + (i - 1) * 20, 4, -58))
+	local radius = 78
+	for i = 1, Numbers.PlotCount do
+		local deg = 25 + ((i - 1) / math.max(1, Numbers.PlotCount - 1)) * 310
+		local rad = math.rad(deg)
+		local pos = Vector3.new(math.sin(rad) * radius, 4, math.cos(rad) * radius)
+		local lookAway = pos + Vector3.new(pos.X, 0, pos.Z)
+		local cf = CFrame.lookAt(pos, Vector3.new(lookAway.X, 4, lookAway.Z))
+		table.insert(plotCFs, cf)
 	end
 
 	for i, cf in plotCFs do

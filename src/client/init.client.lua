@@ -6,6 +6,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Rarities = Config.Rarities
 
 local State = require(script.State)
@@ -72,7 +73,7 @@ Remotes.ThrowResult.OnClientEvent:Connect(function(result)
 		FX.land()
 		FX.burst(result.landing, Color3.fromRGB(255, 220, 120))
 		if typeof(result.distance) == "number" then
-			FX.popup(result.landing, string.format("%.0f studs", result.distance), Color3.fromRGB(255, 255, 200))
+			FX.popup(result.landing, Format.abbrev(result.distance) .. " studs", Color3.fromRGB(255, 255, 200))
 		end
 	end)
 end)
@@ -89,8 +90,8 @@ end)
 
 Remotes.Announcement.OnClientEvent:Connect(function(message, rarity)
 	Toast.show(tostring(message), "success")
-	local color = Rarities.color(rarity or "Mythic")
 	FX.shake(0.55, 0.4)
+	FX.crateSlam(Rarities.color(rarity or "Mythic"))
 end)
 
 Remotes.PlotAssigned.OnClientEvent:Connect(function(plot)

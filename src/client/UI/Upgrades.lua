@@ -12,6 +12,24 @@ local HUD = require(script.Parent.HUD)
 
 local UpgradesUI = {}
 
+local TABS = {
+	{ id = "Hangar", label = "HANGAR", remote = "BuyHangarUpgrade", list = function()
+		return Upgrades.Hangar
+	end, levelOf = function(snap, def)
+		return snap.data.hangarUpgrades[def.id] or 0
+	end },
+	{ id = "Plane", label = "PLANE", remote = "BuyUpgrade", list = function()
+		return Upgrades.Plane
+	end, levelOf = function(snap, _def)
+		return snap.data.planeLevel or 0
+	end },
+	{ id = "Player", label = "PLAYER", remote = "BuyPlayerUpgrade", list = function()
+		return Upgrades.Player
+	end, levelOf = function(snap, def)
+		return snap.data.playerUpgrades[def.id] or 0
+	end },
+}
+
 local function row(parent, def, level, coins, remoteName)
 	local cost = if level >= def.maxLevel then 0 else Upgrades.cost(def, level)
 	local frame = Util.panel({
@@ -86,19 +104,28 @@ function UpgradesUI.mount(gui: ScreenGui)
 	})
 	close.MouseButton1Click:Connect(HUD.close)
 
-	local scroll = Util.scroll(page, UDim2.new(1, -16, 1, -56))
-	scroll.Position = UDim2.fromOffset(8, 48)
+	local tabBar = Instance.new("Frame")
+	tabBar.BackgroundTransparency = 1
+	tabBar.Size = UDim2.new(1, -16, 0, 40)
+	tabBar.Position = UDim2.fromOffset(8, 46)
+	tabBar.Parent = page
+	local tabLayout = Util.list(tabBar, 8)
+	tabLayout.FillDirection = Enum.FillDirection.Horizontal
+
+	local scroll = Util.scroll(page, UDim2.new(1, -16, 1, -96))
+	scroll.Position = UDim2.fromOffset(8, 90)
 	Util.list(scroll, 8)
 
-	local function header(text)
-		Util.label({
-			parent = scroll,
-			text = text,
-			size = UDim2.new(1, 0, 0, 24),
-			font = Theme.Fonts.Title,
-			auto = Enum.AutomaticSize.Y,
-			textSize = 18,
-		})
+	local currentTab = "Hangar"
+	local tabButtons: { [string]: TextButton } = {}
+
+	local function paintTabs()
+		for _, tab in TABS do
+			local b = tabButtons[tab.id]
+			if b then
+				b.BackgroundColor3 = if currentTab == tab.id then Theme.Accent else Theme.Panel2
+			end
+		end
 	end
 
 	local function rebuild()
@@ -107,14 +134,29 @@ function UpgradesUI.mount(gui: ScreenGui)
 		if not snap then
 			return
 		end
-		header("PLANE")
-		for _, def in Upgrades.Plane do
-			row(scroll, def, snap.data.planeLevel or 0, snap.data.coins, "BuyUpgrade")
+		paintTabs()
+		for _, tab in TABS do
+			if tab.id == currentTab then
+				for _, def in tab.list() do
+					row(scroll, def, tab.levelOf(snap, def), snap.data.coins, tab.remote)
+				end
+			end
 		end
-		header("PLAYER")
-		for _, def in Upgrades.Player do
-			row(scroll, def, snap.data.playerUpgrades[def.id] or 0, snap.data.coins, "BuyPlayerUpgrade")
-		end
+	end
+
+	for _, tab in TABS do
+		local b = Util.button({
+			parent = tabBar,
+			text = tab.label,
+			size = UDim2.new(0.33, -6, 1, 0),
+			bg = Theme.Panel2,
+			radius = 10,
+		})
+		tabButtons[tab.id] = b
+		b.MouseButton1Click:Connect(function()
+			currentTab = tab.id
+			rebuild()
+		end)
 	end
 
 	page:GetPropertyChangedSignal("Visible"):Connect(function()

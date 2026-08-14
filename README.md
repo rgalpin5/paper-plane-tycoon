@@ -64,14 +64,14 @@ You should spawn in the plaza, see hangar plots, benches, and a hallway with THR
 
 - Walk onto a THROW pad (or space / prompt) — plane flies, coins pop, a little strength
 - Sit the **FREE** bench — strength ticks up, no coins
-- **UP**: Plane Level + player upgrades (Strength Gain, Planes at Once, Luck)
+- **UP**: three tabs — Hangar (storage, offline), Plane (level), Player (strength gain, planes at once, luck). Buy-max on each.
 - **HAN**: hangar Storage and Offline Income; equipped plane shows on your plot
 - **IDX**: plane index, equip, guaranteed buy if paid-random is restricted
 - **BOX**: Paper / Tape / Box / Hangar / Golden crates, **Details** odds that sum to 100%, pity text
 - **SHOP**: rotating cosmetics (3 slots, +2 with pass) + game passes + coin packs + Robux crate rolls (prompts skip until you paste IDs)
 - **DAY**: streak 1–7 coins (VIP extra); day 7 also opens a free Paper Crate
 - **RB**: preview coin and strength multipliers, then confirm
-- Tutorial once: hallway throw → **UP** → throw → free bench
+- Tutorial once: hangar claimed → hallway throw → **UP** → free bench
 - Offline popup after a second Play session if you wait ~30s+ between sessions (needs DataStore API for it to survive Studio restarts; Mock is per-server)
 
 ## Game Passes and Developer Products

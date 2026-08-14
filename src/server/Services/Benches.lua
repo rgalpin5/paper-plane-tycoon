@@ -15,6 +15,7 @@ local World = require(script.Parent.Parent.World)
 
 local Benches = {}
 local seatedAt: { [Player]: string } = {}
+local occupantOf: { [Seat]: Player } = {}
 
 local function ownsBench(player: Player, def): boolean
 	if def.passKey == nil then
@@ -28,19 +29,29 @@ local function eject(hum: Humanoid)
 	hum.Jump = true
 end
 
+local function markTutorial(player: Player)
+	local data = Data.get(player)
+	if not data or data.tutorial.benched then
+		return
+	end
+	data.tutorial.benched = true
+	if data.tutorial.thrown and data.tutorial.upgraded then
+		data.tutorial.complete = true
+		Remotes.Tutorial:FireClient(player, "done")
+	end
+	Data.replicate(player)
+end
+
 function Benches.start()
 	for _, seat in World.benchSeats() do
 		seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+			local prev = occupantOf[seat]
+			if prev then
+				seatedAt[prev] = nil
+				occupantOf[seat] = nil
+			end
 			local hum = seat.Occupant
 			if not hum then
-				for player, id in seatedAt do
-					if id == seat:GetAttribute("BenchId") then
-						local char = player.Character
-						if not char or char:FindFirstChildWhichIsA("Humanoid") ~= hum then
-							seatedAt[player] = nil
-						end
-					end
-				end
 				return
 			end
 			local player = Players:GetPlayerFromCharacter(hum.Parent)
@@ -59,18 +70,9 @@ function Benches.start()
 				end
 				return
 			end
+			occupantOf[seat] = player
 			seatedAt[player] = benchId
-			if not (Data.get(player) and Data.get(player).tutorial.benched) then
-				local data = Data.get(player)
-				if data and not data.tutorial.benched then
-					data.tutorial.benched = true
-					if data.tutorial.thrown and data.tutorial.upgraded then
-						data.tutorial.complete = true
-						Remotes.Tutorial:FireClient(player, "done")
-					end
-					Data.replicate(player)
-				end
-			end
+			markTutorial(player)
 		end)
 	end
 

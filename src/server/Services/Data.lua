@@ -31,6 +31,7 @@ local TEMPLATE = {
 	equipped = { Planes.StarterId },
 	cosmeticsOwned = {},
 	cosmeticsEquipped = {},
+	rotationPurchases = {},
 	rotationSalt = 0,
 	streak = 0,
 	lastDailyClaimDay = 0,
@@ -43,6 +44,7 @@ local TEMPLATE = {
 	purchaseOrder = {},
 	lastLogout = 0,
 	tutorial = {
+		hangar = false,
 		thrown = false,
 		upgraded = false,
 		benched = false,
@@ -114,6 +116,7 @@ local function snapshotOf(player: Player)
 			cosmeticCoinMult = Stats.cosmeticMult(data, "coins"),
 			cosmeticStrengthMult = Stats.cosmeticMult(data, "strength"),
 			distancePreview = Stats.distance(data, f),
+			coinsPreview = Stats.coinsForDistance(data, f, Stats.distance(data, f)),
 			boostRemaining = math.max(0, data.boosts.doubleCoinsUntil - now),
 		},
 	}
@@ -232,9 +235,15 @@ local function playerAdded(player: Player)
 	if #profile.Data.equipped == 0 then
 		profile.Data.equipped = { Planes.StarterId }
 	end
-	if profile.Data.strength == nil or profile.Data.strength < 1 then
-		profile.Data.strength = Numbers.StarterStrength
-	end
+		if profile.Data.strength == nil or profile.Data.strength < 1 then
+			profile.Data.strength = Numbers.StarterStrength
+		end
+		if profile.Data.tutorial.hangar == nil then
+			profile.Data.tutorial.hangar = false
+		end
+		if profile.Data.rotationPurchases == nil then
+			profile.Data.rotationPurchases = {}
+		end
 
 	profiles[player] = profile
 	task.defer(function()

@@ -1,6 +1,7 @@
 export type Rarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary" | "Mythic" | "Secret"
 
 export type TutorialFlags = {
+	hangar: boolean,
 	thrown: boolean,
 	upgraded: boolean,
 	benched: boolean,
@@ -33,6 +34,7 @@ export type PlayerData = {
 	equipped: { string },
 	cosmeticsOwned: { [string]: number },
 	cosmeticsEquipped: { string },
+	rotationPurchases: { [string]: boolean },
 	rotationSalt: number,
 	streak: number,
 	lastDailyClaimDay: number,
@@ -75,6 +77,7 @@ export type Computed = {
 	cosmeticCoinMult: number,
 	cosmeticStrengthMult: number,
 	distancePreview: number,
+	coinsPreview: number,
 	boostRemaining: number,
 }
 

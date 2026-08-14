@@ -6,9 +6,9 @@ local Theme = require(script.Parent.Theme)
 local Util = require(script.Parent.Util)
 local HUD = require(script.Parent.HUD)
 
-local START_TEXT = "Walk to the blue THROW pads in the hallway"
+local HANGAR_TEXT = "Your hangar is ready — look for your name on a stall"
+local THROW_TEXT = "Walk to the blue THROW pads in the hallway"
 local UPGRADE_TEXT = "Nice! Open UP and buy any upgrade"
-local THROW_AGAIN_TEXT = "Throw again — watch the coins jump"
 local BENCH_TEXT = "Sit on the FREE bench for strength (no coins)"
 local DONE_TEXT = "You're flying. Upgrade, collect planes, rebirth."
 
@@ -25,7 +25,7 @@ function Tutorial.mount(gui: ScreenGui)
 	})
 	local label = Util.label({
 		parent = banner,
-		text = START_TEXT,
+		text = HANGAR_TEXT,
 		align = Enum.TextXAlignment.Center,
 		font = Theme.Fonts.Title,
 	})
@@ -49,13 +49,19 @@ function Tutorial.mount(gui: ScreenGui)
 	end
 
 	Remotes.Tutorial.OnClientEvent:Connect(function(step)
-		if step == "upgrade" then
+		if step == "hangar" then
+			show(HANGAR_TEXT)
+			task.delay(3.5, function()
+				local snap = require(script.Parent.Parent.State).snapshot
+				if snap and snap.data.tutorial and not snap.data.tutorial.thrown then
+					show(THROW_TEXT)
+				end
+			end)
+		elseif step == "upgrade" then
 			show(UPGRADE_TEXT)
 			HUD.open("Upgrades")
-		elseif step == "throwAgain" then
-			HUD.close()
-			show(THROW_AGAIN_TEXT)
 		elseif step == "bench" then
+			HUD.close()
 			show(BENCH_TEXT)
 		elseif step == "done" then
 			show(DONE_TEXT)
@@ -67,16 +73,14 @@ function Tutorial.mount(gui: ScreenGui)
 		local snap = require(script.Parent.Parent.State).snapshot
 		if snap and snap.data.tutorial and not snap.data.tutorial.complete then
 			local t = snap.data.tutorial
-			if not t.thrown then
-				show(START_TEXT)
+			if not t.hangar then
+				show(HANGAR_TEXT)
+			elseif not t.thrown then
+				show(THROW_TEXT)
 			elseif not t.upgraded then
 				show(UPGRADE_TEXT)
 			elseif not t.benched then
-				if snap.data.totalThrows <= 1 then
-					show(THROW_AGAIN_TEXT)
-				else
-					show(BENCH_TEXT)
-				end
+				show(BENCH_TEXT)
 			end
 		end
 	end)

@@ -51,6 +51,7 @@ function Plots.refresh(player: Player)
 	clearDisplay(index)
 	setSign(plot, player.DisplayName)
 	local flags = Monetization.flags(player)
+	local unlocked = Stats.stands(data, flags)
 	local ids = Stats.displayPlaneIds(data, flags)
 	local standsFolder = plot:FindFirstChild("Stands")
 	if not standsFolder then
@@ -65,9 +66,14 @@ function Plots.refresh(player: Player)
 	table.sort(stands, function(a, b)
 		return (a:GetAttribute("Slot") or 0) < (b:GetAttribute("Slot") or 0)
 	end)
+	for i, stand in stands do
+		local open = i <= unlocked
+		stand.Transparency = if open then 0 else 0.55
+		stand.CanCollide = open
+	end
 	for i, planeId in ids do
 		local stand = stands[i]
-		if stand then
+		if stand and i <= unlocked then
 			local model = PlaneFactory.create(planeId)
 			if i == 1 then
 				PlaneFactory.applyCosmetics(model, data.cosmeticsEquipped)
@@ -80,8 +86,17 @@ function Plots.refresh(player: Player)
 end
 
 function Plots.assign(player: Player)
+	local function markHangar()
+		local data = Data.get(player)
+		if data and not data.tutorial.hangar then
+			data.tutorial.hangar = true
+			Remotes.Tutorial:FireClient(player, "hangar")
+			Data.replicate(player)
+		end
+	end
 	if plotOf[player] then
 		Plots.refresh(player)
+		markHangar()
 		return
 	end
 	local models = World.plotModels()
@@ -91,10 +106,12 @@ function Plots.assign(player: Player)
 			plotOf[player] = i
 			Plots.refresh(player)
 			Remotes.PlotAssigned:FireClient(player, i)
+			markHangar()
 			return
 		end
 	end
 	Remotes.PlotAssigned:FireClient(player, 0)
+	markHangar()
 end
 
 function Plots.release(player: Player)
@@ -112,15 +129,30 @@ function Plots.release(player: Player)
 end
 
 function Plots.start()
+	local dirty: { [Player]: boolean } = {}
 	Data.ProfileLoaded:Connect(function(player)
 		Plots.assign(player)
 	end)
 	Data.Changed:Connect(function(player)
 		if plotOf[player] then
-			Plots.refresh(player)
+			dirty[player] = true
 		end
 	end)
-	Players.PlayerRemoving:Connect(Plots.release)
+	task.spawn(function()
+		while true do
+			task.wait(1.25)
+			for player in dirty do
+				dirty[player] = nil
+				if player.Parent and plotOf[player] then
+					Plots.refresh(player)
+				end
+			end
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		dirty[player] = nil
+		Plots.release(player)
+	end)
 end
 
 return Plots

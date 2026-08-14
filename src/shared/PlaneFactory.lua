@@ -120,6 +120,10 @@ function PlaneFactory.applyCosmetics(model: Model, equipped: { string }?)
 				gem.Massless = true
 				gem.CFrame = body.CFrame * CFrame.new(0, 0.16 * scale, 0)
 				gem.Parent = model
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = body
+				weld.Part1 = gem
+				weld.Parent = gem
 			end
 		end
 	end

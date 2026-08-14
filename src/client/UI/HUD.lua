@@ -16,6 +16,8 @@ local coinsLabel: TextLabel
 local strengthLabel: TextLabel
 local scrapLabel: TextLabel
 local boostLabel: TextLabel
+local distLabel: TextLabel
+local rbButton: TextButton
 local lastThrow = 0
 
 local function closePages()
@@ -58,6 +60,20 @@ local function refresh(snap)
 	coinsLabel.Text = Format.abbrev(snap.data.coins)
 	strengthLabel.Text = "STR " .. Format.abbrev(snap.data.strength)
 	scrapLabel.Text = Format.abbrev(snap.data.scrap) .. " scrap"
+	local dist = snap.computed.distancePreview or 0
+	local coins = snap.computed.coinsPreview or 0
+	distLabel.Text = string.format(
+		"%s studs  →  %s coins",
+		Format.abbrev(dist),
+		Format.abbrev(coins)
+	)
+	if rbButton then
+		rbButton.Text = string.format(
+			"RB\n$×%.2f  S×%.2f",
+			snap.computed.rebirthCoinMult or 1,
+			snap.computed.rebirthStrengthMult or 1
+		)
+	end
 	local remain = snap.computed.boostRemaining or 0
 	boostLabel.Visible = remain > 0
 	if remain > 0 then
@@ -107,7 +123,7 @@ function HUD.mount(gui: ScreenGui)
 		parent = gui,
 		text = "",
 		size = UDim2.fromOffset(140, 28),
-		pos = UDim2.new(0.5, 0, 0, 80),
+		pos = UDim2.new(0.5, 0, 0, 100),
 		anchor = Vector2.new(0.5, 0),
 		align = Enum.TextXAlignment.Center,
 		color = Theme.Gold,
@@ -115,6 +131,18 @@ function HUD.mount(gui: ScreenGui)
 		z = 6,
 	})
 	boostLabel.Visible = false
+
+	distLabel = Util.label({
+		parent = gui,
+		text = "48 studs  →  60 coins",
+		size = UDim2.new(0.86, 0, 0, 22),
+		pos = UDim2.new(0.5, 0, 0, 78),
+		anchor = Vector2.new(0.5, 0),
+		align = Enum.TextXAlignment.Center,
+		color = Theme.Paper,
+		z = 6,
+	})
+	distLabel.TextTransparency = 0.08
 
 	local hint = Util.label({
 		parent = gui,
@@ -153,7 +181,7 @@ function HUD.mount(gui: ScreenGui)
 
 	local navRight = Instance.new("Frame")
 	navRight.BackgroundTransparency = 1
-	navRight.Size = UDim2.fromOffset(92, 360)
+	navRight.Size = UDim2.fromOffset(92, 400)
 	navRight.Position = UDim2.new(1, -10, 0.52, 0)
 	navRight.AnchorPoint = Vector2.new(1, 0.5)
 	navRight.Parent = gui
@@ -179,7 +207,8 @@ function HUD.mount(gui: ScreenGui)
 	nav(navRight, "Crates", "BOX", Theme.Gold)
 	nav(navRight, "Shop", "SHOP", Theme.Green)
 	nav(navRight, "Daily", "DAY", Color3.fromRGB(80, 180, 160))
-	nav(navRight, "Rebirth", "RB", Color3.fromRGB(180, 70, 140))
+	rbButton = nav(navRight, "Rebirth", "RB\n$×1.00  S×1.00", Color3.fromRGB(180, 70, 140))
+	rbButton.Size = UDim2.new(1, 0, 0, 70)
 
 	overlay = Instance.new("TextButton")
 	overlay.Name = "Overlay"

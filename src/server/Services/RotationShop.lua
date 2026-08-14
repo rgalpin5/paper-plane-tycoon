@@ -75,6 +75,10 @@ function RotationShop.start()
 			return
 		end
 		if (data.cosmeticsOwned[cosmeticId] or 0) > 0 then
+			if not Economy.spendCoins(player, def.cost) then
+				Economy.notify(player, "Not enough coins.", "error")
+				return
+			end
 			local scrap = 40
 			data.scrap += scrap
 			data.cosmeticsOwned[cosmeticId] += 1
@@ -87,6 +91,10 @@ function RotationShop.start()
 			return
 		end
 		data.cosmeticsOwned[cosmeticId] = 1
+		if data.rotationPurchases == nil then
+			data.rotationPurchases = {}
+		end
+		data.rotationPurchases[cosmeticId] = true
 		Data.replicate(player)
 		Economy.notify(player, "Unlocked " .. def.name, "success")
 	end)
@@ -104,10 +112,10 @@ function RotationShop.start()
 		end
 		local slots = Stats.cosmeticSlots(Monetization.flags(player))
 		if #data.cosmeticsEquipped >= slots then
-			data.cosmeticsEquipped[1] = cosmeticId
-		else
-			table.insert(data.cosmeticsEquipped, cosmeticId)
+			Economy.notify(player, "All slots full. Unequip one, or buy Extra Cosmetic Slots.", "info")
+			return
 		end
+		table.insert(data.cosmeticsEquipped, cosmeticId)
 		Data.replicate(player)
 	end)
 

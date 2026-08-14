@@ -69,7 +69,7 @@ function Stats.luckMultiplier(data, flags): number
 	return luck
 end
 
-function Stats.strengthGainMult(data, flags): number
+function Stats.strengthGainMult(data, _flags): number
 	local m = 1 + (data.playerUpgrades.StrengthGain or 0) * Numbers.StrengthGainPerLevel
 	m *= Stats.rebirthStrengthMult(data)
 	m *= Stats.cosmeticMult(data, "strength")
@@ -100,13 +100,13 @@ function Stats.storage(data, flags): number
 	return cap
 end
 
-function Stats.stands(data, flags): number
+function Stats.stands(data, _flags): number
 	local level = data.hangarUpgrades.Storage or 0
 	local extra = math.floor(level / 5) * Numbers.HangarStandsPerFiveLevels
 	return math.clamp(Numbers.HangarBaseStands + extra, 1, Numbers.HangarMaxStands)
 end
 
-function Stats.offlineHours(data, flags): number
+function Stats.offlineHours(_data, flags): number
 	if flags.offlinePlus or flags.vip then
 		return Numbers.OfflineHoursVIP
 	end
@@ -121,7 +121,9 @@ function Stats.idlePerMinute(data, flags): number
 	return rate
 end
 
-function Stats.distance(data, flags): number
+-- Distance = f(Strength) × equipped plane × plane level.
+-- Strength uses a soft curve so early throws hit the 50 marker and late game fills the 1K hall.
+function Stats.distance(data, _flags): number
 	local str = math.max(1, data.strength or Numbers.StarterStrength)
 	local dist = Numbers.BaseDistance + (str ^ Numbers.StrengthDistancePower) * Numbers.StrengthDistanceScale
 	dist *= Stats.planeMultiplier(data)

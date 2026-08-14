@@ -9,6 +9,8 @@ export type CosmeticDef = {
 	blurb: string,
 }
 
+local Numbers = require(script.Parent.Numbers)
+
 local function item(
 	id: string,
 	name: string,
@@ -77,7 +79,8 @@ local function shuffle(ids: { string }, seed: number)
 end
 
 function Cosmetics.rotationIds(now: number, salt: number?): { string }
-	local bucket = math.floor(now / (4 * 3600))
+	local period = Numbers.RotationSeconds
+	local bucket = math.floor(now / period)
 	local ids = {}
 	for _, def in list do
 		table.insert(ids, def.id)
@@ -87,7 +90,7 @@ function Cosmetics.rotationIds(now: number, salt: number?): { string }
 end
 
 function Cosmetics.rotationEndsAt(now: number): number
-	local period = 4 * 3600
+	local period = Numbers.RotationSeconds
 	return (math.floor(now / period) + 1) * period
 end
 

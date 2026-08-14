@@ -7,7 +7,6 @@ local Planes = Config.Planes
 
 local Data = require(script.Parent.Data)
 local Economy = require(script.Parent.Economy)
-local Monetization = require(script.Parent.Monetization)
 local Stats = require(script.Parent.Parent.Lib.Stats)
 
 local Hangar = {}
@@ -68,7 +67,12 @@ local function buy(player: Player, upgradeId: string, buyMax: boolean, category:
 	end
 	if not data.tutorial.upgraded then
 		data.tutorial.upgraded = true
-		Remotes.Tutorial:FireClient(player, "throwAgain")
+		if data.tutorial.benched then
+			data.tutorial.complete = true
+			Remotes.Tutorial:FireClient(player, "done")
+		else
+			Remotes.Tutorial:FireClient(player, "bench")
+		end
 	end
 	Data.replicate(player)
 	Economy.notify(player, def.name .. " +" .. bought, "success")
@@ -139,7 +143,6 @@ function Hangar.start()
 		end
 	end)
 
-	Data.ProfileLoaded:Connect(function() end)
 end
 
 return Hangar

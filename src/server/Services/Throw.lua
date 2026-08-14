@@ -87,13 +87,6 @@ local function doOneThrow(player: Player, data, flags, origin: CFrame, index: nu
 	if not data.tutorial.thrown then
 		data.tutorial.thrown = true
 		Remotes.Tutorial:FireClient(player, "upgrade")
-	elseif data.tutorial.upgraded and not data.tutorial.complete then
-		if data.tutorial.benched then
-			data.tutorial.complete = true
-			Remotes.Tutorial:FireClient(player, "done")
-		else
-			Remotes.Tutorial:FireClient(player, "bench")
-		end
 	end
 
 	local duration = math.clamp(distance / Numbers.FlightSpeed, 0.6, 6)
